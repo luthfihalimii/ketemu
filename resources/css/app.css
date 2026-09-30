@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* KETEMU PENS brand palette — modern campus, friendly utility */
+    --color-brand-50: oklch(0.97 0.014 250);
+    --color-brand-100: oklch(0.94 0.03 250);
+    --color-brand-200: oklch(0.89 0.055 252);
+    --color-brand-300: oklch(0.81 0.09 253);
+    --color-brand-400: oklch(0.71 0.13 254);
+    --color-brand-500: oklch(0.62 0.17 255);
+    --color-brand-600: oklch(0.54 0.19 256);
+    --color-brand-700: oklch(0.46 0.17 256);
+    --color-brand-800: oklch(0.38 0.13 256);
+    --color-brand-900: oklch(0.32 0.1 256);
+}
+
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-slate-50 text-slate-800 antialiased;
+    }
+
+    /* Comfortable tap targets on mobile. */
+    button,
+    [role='button'],
+    a {
+        @apply outline-offset-2;
+    }
+}
+
+@utility field {
+    @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-xs
+        transition placeholder:text-slate-400
+        focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none
+        disabled:cursor-not-allowed disabled:bg-slate-100;
+}
+
+@utility label {
+    @apply mb-1.5 block text-sm font-semibold text-slate-700;
+}
+
+@utility help {
+    @apply mt-1.5 text-sm text-slate-500;
+}
+
+@utility card {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-xs;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
