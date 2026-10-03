@@ -52,6 +52,12 @@ class ItemService
                 ]);
 
                 $item->status = ItemStatus::WaitingDeposit;
+
+                // Menahan = janji + tenggat. Langsung titip = tanpa tenggat.
+                if (! ($data['confirm_deposit'] ?? false)) {
+                    $item->hold_until = now()->addHours(Item::holdMaxHours());
+                    $item->hold_promised = true;
+                }
                 $item->save();
 
                 if ($photo !== null) {
@@ -217,6 +223,9 @@ class ItemService
 
     /**
      * Satpam memverifikasi barang fisik sudah ada di pos.
+     *
+     * 1 langkah dari sisi satpam: kalau masih WAITING_DEPOSIT, sekalian
+     * dicatat STORED + requested agar penemu cukup tunjukkan QR titip.
      */
     public function confirmDepositByGuard(Item $item, User $guard): Item
     {
@@ -224,6 +233,10 @@ class ItemService
             $item = Item::query()->whereKey($item->getKey())->lockForUpdate()->firstOrFail();
             if (! $item->isFoundReport()) {
                 throw ValidationException::withMessages(['deposit' => 'Hanya laporan temuan yang dapat dikonfirmasi satpam.']);
+            }
+            if ($item->status === ItemStatus::WaitingDeposit) {
+                $item->setStatus(ItemStatus::Stored);
+                $item->deposit_requested_at ??= now();
             }
             $item->deposit_confirmed_at = now();
             $item->deposit_confirmed_by = $guard->id;

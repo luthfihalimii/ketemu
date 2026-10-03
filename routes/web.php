@@ -140,6 +140,8 @@ Route::middleware(['auth', 'role:guard,admin'])
             ->name('pickup.store');
         Route::post('/titip/{item}/konfirmasi', [PickupVerificationController::class, 'confirmDeposit'])
             ->name('deposit.confirm');
+        Route::post('/titip/konfirmasi-kode', [PickupVerificationController::class, 'confirmDepositByCode'])
+            ->name('deposit.confirm-code');
         Route::get('/struk/{pickupCode}', [PickupVerificationController::class, 'receipt'])
             ->name('pickup.receipt');
     });

@@ -36,6 +36,8 @@ use Illuminate\Support\Str;
     'deposit_requested_at',
     'deposit_confirmed_at',
     'deposit_confirmed_by',
+    'hold_until',
+    'hold_promised',
     'verification_question',
     'verification_answer',
 ])]
@@ -57,6 +59,8 @@ class Item extends Model
             'deposit_reminded_at' => 'datetime',
             'deposit_requested_at' => 'datetime',
             'deposit_confirmed_at' => 'datetime',
+            'hold_until' => 'datetime',
+            'hold_promised' => 'boolean',
             // Hashing the answer means a leaked database never reveals the secret.
             'verification_answer' => 'hashed',
         ];
@@ -154,6 +158,29 @@ class Item extends Model
     public function isDepositConfirmed(): bool
     {
         return $this->deposit_confirmed_at !== null;
+    }
+
+    public static function holdMaxHours(): int
+    {
+        return (int) config('ketemupens.hold.max_hours', 24);
+    }
+
+    /**
+     * Laporan temuan yang ditahan penemu melewati tenggat SLA.
+     */
+    #[Scope]
+    protected function holdOverdue(Builder $query): void
+    {
+        $query->where('status', ItemStatus::WaitingDeposit->value)
+            ->whereNotNull('hold_until')
+            ->where('hold_until', '<', now());
+    }
+
+    public function isHoldOverdue(): bool
+    {
+        return $this->status === ItemStatus::WaitingDeposit
+            && $this->hold_until !== null
+            && $this->hold_until->isPast();
     }
 
     #[Scope]

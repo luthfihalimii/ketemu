@@ -33,10 +33,61 @@ class ExpireStaleRecords extends Command
         $released = $this->releaseExpiredClaims($claims);
         $items = $this->expireStaleItems($audit);
         $reminders = $this->flagDepositFollowUps($audit);
+        $holds = $this->flagHoldOverdue($audit);
 
-        $this->info("Kode pengambilan kedaluwarsa: {$codes}. Klaim dilepas: {$released}. Barang kedaluwarsa: {$items}. Perlu tindak lanjut penitipan: {$reminders}.");
+        $this->info("Kode pengambilan kedaluwarsa: {$codes}. Klaim dilepas: {$released}. Barang kedaluwarsa: {$items}. Perlu tindak lanjut penitipan: {$reminders}. Tenggat tahan lewat: {$holds}.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Penemu yang menahan melewati SLA 24 jam: ingatkan sekali + beri tahu
+     * admin. deposit_reminded_at dipakai ulang sebagai penanda sekali-kirim.
+     */
+    private function flagHoldOverdue(AuditLogger $audit): int
+    {
+        $items = Item::query()
+            ->holdOverdue()
+            ->whereNull('deposit_reminded_at')
+            ->with('user')
+            ->get();
+
+        $admins = User::admins();
+
+        foreach ($items as $item) {
+            $item->deposit_reminded_at = now();
+            $item->save();
+
+            $audit->log(
+                event: 'items.hold_overdue',
+                description: 'Penemu melewati tenggat penitipan; barang masih ditahan.',
+                auditable: $item,
+                properties: ['hold_until' => $item->hold_until?->toDateTimeString()],
+                user: null,
+            );
+
+            $item->user?->notify(new ActivityNotification(
+                event: ActivityNotification::DEPOSIT_UNCONFIRMED,
+                title: 'Tenggat penitipan lewat',
+                body: 'Kamu berjanji menitipkan "'.$item->title.'" maks. '.Item::holdMaxHours().' jam. Segera titipkan ke satpam atau tunjukkan QR titip di pos.',
+                item: $item,
+                url: route('items.show', $item),
+                level: 'error',
+            ));
+
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new ActivityNotification(
+                    event: ActivityNotification::ADMIN_DEPOSIT_UNCONFIRMED,
+                    title: 'Penemu melewati tenggat penitipan',
+                    body: '"'.$item->title.'" oleh '.($item->user->name ?? 'pengguna').' belum dititipkan melewati tenggat.',
+                    item: $item,
+                    url: route('admin.items.show', $item),
+                    level: 'error',
+                ));
+            }
+        }
+
+        return $items->count();
     }
 
     /**

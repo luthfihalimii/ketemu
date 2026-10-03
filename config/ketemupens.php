@@ -65,4 +65,10 @@ return [
         'disk' => env('FILESYSTEM_PHOTOS_DISK', 'public'),
     ],
 
+    'hold' => [
+        // Penemu boleh menahan barang sebelum titip ke satpam. Foto wajib +
+        // janji wajib saat menahan; lewat tenggat = overdue + admin follow-up.
+        'max_hours' => (int) env('HOLD_MAX_HOURS', 24),
+    ],
+
 ];

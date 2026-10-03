@@ -1,0 +1,78 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [ketemu]
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - storage:/var/www/html/storage:ro
+    depends_on:
+      - app
+    networks: [ketemu]
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-ketemupens}
+      MYSQL_USER: ${DB_USERNAME:-ketemu}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Isi DB_PASSWORD di .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Isi DB_ROOT_PASSWORD di .env}
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [ketemu]
+
+  queue:
+    build: .
+    restart: unless-stopped
+    command: php artisan queue:work --tries=3 --max-time=3600
+    env_file: .env
+    environment:
+      DB_HOST: db
+      SKIP_MIGRATIONS: "1"
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      - app
+    networks: [ketemu]
+
+  scheduler:
+    build: .
+    restart: unless-stopped
+    command: php artisan schedule:work
+    env_file: .env
+    environment:
+      DB_HOST: db
+      SKIP_MIGRATIONS: "1"
+    volumes:
+      - storage:/var/www/html/storage
+    depends_on:
+      - app
+    networks: [ketemu]
+
+volumes:
+  storage:
+  dbdata:
+
+networks:
+  ketemu:

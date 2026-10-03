@@ -36,6 +36,7 @@ class FileUploadTest extends TestCase
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ada inisial nama di bagian dalam',
             'photo' => UploadedFile::fake()->image('dompet.jpg', 800, 600),
+            'hold_promise' => '1',
         ])->assertRedirect();
 
         $item = Item::query()->latest('id')->firstOrFail();
@@ -59,6 +60,7 @@ class FileUploadTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang',
+            'hold_promise' => '1',
             'photo' => UploadedFile::fake()->create('skrip.php', 100, 'application/x-php'),
         ])->assertSessionHasErrors('photo');
 
@@ -78,6 +80,7 @@ class FileUploadTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang',
+            'hold_promise' => '1',
             'photo' => UploadedFile::fake()->create('gambar.bmp', 200, 'image/bmp'),
         ])->assertSessionHasErrors('photo');
     }
@@ -95,6 +98,7 @@ class FileUploadTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang',
+            'hold_promise' => '1',
             'photo' => UploadedFile::fake()->image('besar.jpg')->size(6000),
         ])->assertSessionHasErrors('photo');
     }
@@ -112,6 +116,7 @@ class FileUploadTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang',
+            'hold_promise' => '1',
             'photo' => UploadedFile::fake()->image('../../evil;rm -rf.jpg', 400, 400),
         ]);
 
@@ -136,6 +141,7 @@ class FileUploadTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang',
+            'hold_promise' => '1',
             'photo' => UploadedFile::fake()->image('layar.png', 1200, 900),
         ]);
 
@@ -159,6 +165,7 @@ class FileUploadTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang',
+            'hold_promise' => '1',
         ];
 
         for ($i = 0; $i < 10; $i++) {

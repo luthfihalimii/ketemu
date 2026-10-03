@@ -6,6 +6,7 @@ use App\Models\Item;
 use App\Services\ItemPhotoService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreFoundItemRequest extends FormRequest
 {
@@ -70,7 +71,35 @@ class StoreFoundItemRequest extends FormRequest
                 'dimensions:max_width=4000,max_height=4000',
             ],
             'confirm_deposit' => ['nullable', 'boolean'],
+            // Janji SLA: wajib dicentang bila barang belum dititipkan sekarang.
+            'hold_promise' => ['nullable', 'boolean'],
         ];
+    }
+
+    protected function withValidator(Validator $validator): void
+    {
+        // Model "tahan dulu": yang menahan wajib foto + janji titip maks
+        // HOLD_MAX_HOURS. Tanpa keduanya, laporan ditolak agar tidak ada
+        // barang ghost tanpa bukti dan tanpa komitmen.
+        $validator->after(function (Validator $validator): void {
+            if ($this->boolean('confirm_deposit')) {
+                return;
+            }
+
+            if (! $this->hasFile('photo')) {
+                $validator->errors()->add(
+                    'photo',
+                    'Foto wajib bila barang belum dititipkan sekarang — sebagai bukti barang benar ada padamu.',
+                );
+            }
+
+            if (! $this->boolean('hold_promise')) {
+                $validator->errors()->add(
+                    'hold_promise',
+                    'Centang janji penitipan: kamu akan menitipkan ke satpam maks. '.Item::holdMaxHours().' jam.',
+                );
+            }
+        });
     }
 
     /**

@@ -88,6 +88,12 @@
 
             <x-photo-upload />
 
+            <p class="rounded-xl bg-sky-50 p-4 text-sm text-sky-900 ring-1 ring-sky-200 ring-inset">
+                Pos satpam jauh? Kamu boleh <strong>menahan dulu maks. {{ \App\Models\Item::holdMaxHours() }} jam</strong> —
+                tapi <strong>foto wajib</strong> sebagai bukti + wajib centang janji di bawah. Lewat tenggat,
+                laporan masuk antrean tindak lanjut admin.
+            </p>
+
             <div class="border-t border-slate-200 pt-6">
                 <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
                     <x-icon name="shield" class="h-5 w-5 text-brand-600" />
@@ -143,6 +149,12 @@
                         name="confirm_deposit"
                         label="Barang sudah saya titipkan ke satpam"
                         hint="Centang bila barang sudah benar-benar berada di pos satpam. Setelah ini barang dapat diklaim pemiliknya."
+                    />
+
+                    <x-checkbox
+                        name="hold_promise"
+                        label="Saya janji menitipkan maks. 24 jam (bila belum titip sekarang)"
+                        hint="Wajib dicentang + foto wajib bila barang masih kamu pegang."
                     />
                 </div>
             </div>

@@ -26,13 +26,14 @@ class ItemModerationController extends Controller
     {
         $filters = $request->validate([
             'status' => ['nullable', 'string'],
-            'only' => ['nullable', 'in:flagged,deposit_overdue'],
+            'only' => ['nullable', 'in:flagged,deposit_overdue,hold_overdue'],
         ]);
 
         $items = Item::query()
             ->with(['category:id,name', 'user:id,name,email', 'depositLocation:id,name'])
             ->when(($filters['only'] ?? null) === 'flagged', fn ($query) => $query->flagged())
             ->when(($filters['only'] ?? null) === 'deposit_overdue', fn ($query) => $query->depositOverdue())
+            ->when(($filters['only'] ?? null) === 'hold_overdue', fn ($query) => $query->holdOverdue())
             ->when(
                 filled($filters['status'] ?? null) && ItemStatus::tryFrom($filters['status']) !== null,
                 fn ($query) => $query->where('status', $filters['status']),
@@ -47,6 +48,7 @@ class ItemModerationController extends Controller
             'filters' => $filters,
             'flagCount' => Item::query()->flagged()->count(),
             'depositFollowUpCount' => Item::query()->depositOverdue()->count(),
+            'holdOverdueCount' => Item::query()->holdOverdue()->count(),
             'statusOptions' => ItemStatus::options(),
         ]);
     }

@@ -10,6 +10,7 @@ use App\Models\PickupCode;
 use App\Services\ItemService;
 use App\Services\PickupService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PickupVerificationController extends Controller
@@ -67,6 +68,26 @@ class PickupVerificationController extends Controller
         $this->items->confirmDepositByGuard($item, request()->user());
 
         return back()->with('status', 'Penitipan "'.$item->title.'" terkonfirmasi. Barang kini berstatus terverifikasi fisik satpam.');
+    }
+
+    /**
+     * 1 langkah via QR/kode laporan: satpam scan KP-... dari HP penemu.
+     */
+    public function confirmDepositByCode(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'deposit_code' => ['required', 'string', 'max:64'],
+        ]);
+
+        $item = Item::query()->where('code', mb_strtoupper(trim($validated['deposit_code'])))->first();
+
+        if ($item === null || ! $item->isFoundReport()) {
+            return back()->withErrors(['deposit_code' => 'Kode laporan tidak ditemukan atau bukan laporan temuan.']);
+        }
+
+        $this->items->confirmDepositByGuard($item, $request->user());
+
+        return back()->with('status', 'Penitipan "'.$item->title.'" terkonfirmasi 1 langkah via QR. Barang tersedia dan terverifikasi fisik.');
     }
 
     /**

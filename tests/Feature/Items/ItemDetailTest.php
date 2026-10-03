@@ -69,7 +69,7 @@ class ItemDetailTest extends TestCase
         $this->actingAs($reporter)
             ->get(route('items.show', $item))
             ->assertOk()
-            ->assertSee('Barang sudah saya titipkan ke satpam');
+            ->assertSee('Tunjukkan QR ini ke satpam', false);
     }
 
     #[Test]

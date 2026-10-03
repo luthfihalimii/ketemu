@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\Item;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\BuildsItemFlow;
 use Tests\TestCase;
@@ -84,6 +85,8 @@ class P1FeatureTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ciri rahasia yang cukup panjang unik',
+            'photo' => UploadedFile::fake()->image('timeline.jpg', 800, 600),
+            'hold_promise' => '1',
         ])->assertRedirect();
 
         $item = Item::query()->latest('id')->firstOrFail();

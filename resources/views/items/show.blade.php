@@ -121,25 +121,33 @@
                             <div class="rounded-xl bg-sky-50 p-4 text-sm text-sky-900 ring-1 ring-sky-200 ring-inset">
                                 <p class="font-semibold">Ini laporanmu.</p>
                                 @if ($item->status === \App\Enums\ItemStatus::WaitingDeposit)
-                                    <p class="mt-1">Konfirmasi setelah barang benar-benar kamu titipkan ke satpam. Satpam akan memverifikasi fisiknya di pos.</p>
-                                    <form method="POST" action="{{ route('items.confirm-deposit', $item) }}" class="mt-3">
+                                    <p class="mt-1">Tunjukkan QR ini ke satpam di pos — satpam scan, barang langsung tercatat + terkonfirmasi 1 langkah.</p>
+                                    <img src="{{ app(\App\Services\PickupQrService::class)->svgDataUri($item->code) }}" alt="QR titip {{ $item->title }}" width="160" height="160" class="mt-3 h-32 w-32 rounded-xl bg-white p-2 ring-1 ring-sky-200" loading="lazy" decoding="async">
+                                    <p class="mt-1 font-mono text-xs">{{ $item->code }}</p>
+                                    @if ($item->hold_until && ! $item->isHoldOverdue())
+                                        <p class="mt-1 text-xs font-semibold">Tenggat titip: {{ $item->hold_until->translatedFormat('d M Y, H:i') }}</p>
+                                    @elseif ($item->isHoldOverdue())
+                                        <p class="mt-1 text-xs font-semibold text-rose-700">Tenggat lewat — segera titipkan, admin sudah diberi tahu.</p>
+                                    @endif
+                                    <p class="mt-2 text-xs">Tanpa satpam di dekatmu? Bisa juga konfirmasi mandiri dulu:</p>
+                                    <form method="POST" action="{{ route('items.confirm-deposit', $item) }}" class="mt-1">
                                         @csrf
-                                        <x-button type="submit" variant="success" size="sm" icon="check">
-                                            Barang sudah saya titipkan ke satpam
+                                        <x-button type="submit" variant="secondary" size="sm" icon="check">
+                                            Saya sudah titipkan (konfirmasi mandiri)
                                         </x-button>
                                     </form>
                                 @elseif ($item->isLostReport() && $item->status === \App\Enums\ItemStatus::Reported)
                                     <p class="mt-1">
                                         @if ($item->matchedItem)
-                                            Sudah dicocokkan dengan
+                                            Sudah ditautkan dengan
                                             <span class="font-semibold">{{ $item->matchedItem->title }}</span>.
                                             Ajukan klaim pada barang tersebut untuk membuktikan kepemilikan.
                                         @else
-                                            Cari barang temuan yang cocok, lalu ajukan klaim untuk membuktikan kepemilikan.
+                                            Menautkan itu opsional. Cara tercepat: cari di katalog lalu ajukan klaim + jawab verifikasi.
                                         @endif
                                     </p>
-                                    <x-button :href="route('dashboard.matches', $item)" variant="success" size="sm" icon="search" class="mt-3">
-                                        {{ $item->matchedItem ? 'Ubah kecocokan' : 'Cari kecocokan' }}
+                                    <x-button :href="route('dashboard.matches', $item)" variant="secondary" size="sm" icon="search" class="mt-3">
+                                        {{ $item->matchedItem ? 'Ubah tautan (opsional)' : 'Lihat yang mirip (opsional)' }}
                                     </x-button>
                                 @else
                                     <p class="mt-1">Pantau prosesnya melalui halaman riwayat laporan.</p>

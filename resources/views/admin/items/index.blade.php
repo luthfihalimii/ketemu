@@ -15,6 +15,9 @@
             <x-button :href="route('admin.items.index', ['only' => 'deposit_overdue'])" variant="{{ ($filters['only'] ?? null) === 'deposit_overdue' ? 'primary' : 'secondary' }}" size="sm" icon="clock">
                 Belum Dititipkan ({{ $depositFollowUpCount }})
             </x-button>
+            <x-button :href="route('admin.items.index', ['only' => 'hold_overdue'])" variant="{{ ($filters['only'] ?? null) === 'hold_overdue' ? 'primary' : 'secondary' }}" size="sm" icon="alert-triangle">
+                Tenggat Lewat ({{ $holdOverdueCount ?? 0 }})
+            </x-button>
             <x-button :href="route('admin.claims.index')" variant="secondary" size="sm" icon="hand-raised">Klaim</x-button>
             <x-button :href="route('admin.audit.index')" variant="secondary" size="sm" icon="list">Log Aktivitas</x-button>
             <x-button :href="route('admin.categories.index')" variant="secondary" size="sm" icon="tag">Kategori</x-button>
@@ -23,7 +26,7 @@
 
         <form method="GET" action="{{ route('admin.items.index') }}" class="card mb-6 grid gap-4 p-5 sm:grid-cols-3">
             <x-select name="status" label="Status" placeholder="Semua status" :selected="$filters['status'] ?? null" :options="$statusOptions" />
-            <x-select name="only" label="Tampilkan" placeholder="Semua laporan" :selected="$filters['only'] ?? null" :options="['flagged' => 'Hanya yang ditandai', 'deposit_overdue' => 'Belum dikonfirmasi dititipkan']" />
+            <x-select name="only" label="Tampilkan" placeholder="Semua laporan" :selected="$filters['only'] ?? null" :options="['flagged' => 'Hanya yang ditandai', 'deposit_overdue' => 'Belum dikonfirmasi dititipkan', 'hold_overdue' => 'Tenggat tahan lewat (SLA)']" />
             <div class="flex items-end gap-3">
                 <x-button type="submit" icon="search">Terapkan</x-button>
                 <x-button :href="route('admin.items.index')" variant="secondary">Hapus filter</x-button>

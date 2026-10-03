@@ -132,12 +132,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!scanning) return;
                 try {
                     const codes = await detector.detect(video);
-                    const value = codes[0]?.rawValue?.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) ?? '';
-                    if (value.length === 8) {
-                        target.value = value.length > 4 ? `${value.slice(0, 4)}-${value.slice(4)}` : value;
-                        status.textContent = 'QR terbaca. Periksa kode lalu tekan Verifikasi.';
-                        stop();
-                        return;
+                    const raw = (codes[0]?.rawValue ?? '').trim().toUpperCase();
+                    if (target.id === 'deposit-code') {
+                        if (/^KP-[A-Z0-9-]{4,}$/.test(raw)) {
+                            target.value = raw.slice(0, 64);
+                            status.textContent = 'QR titip terbaca. Periksa kode lalu tekan Konfirmasi.';
+                            stop();
+                            return;
+                        }
+                        if (raw !== '') {
+                            status.textContent = 'QR ini bukan kode laporan (KP-...). Arahkan ke QR titip.';
+                        }
+                    } else {
+                        if (/^KP-/.test(raw)) {
+                            status.textContent = 'Itu QR titip — pakai kolom Kode laporan di atas.';
+                        } else {
+                            const value = raw.replace(/[^A-Z0-9]/g, '').slice(0, 8);
+                            if (value.length === 8) {
+                                target.value = value.length > 4 ? `${value.slice(0, 4)}-${value.slice(4)}` : value;
+                                status.textContent = 'QR terbaca. Periksa kode lalu tekan Verifikasi.';
+                                stop();
+                                return;
+                            }
+                        }
                     }
                 } catch {
                     // Abaikan frame gagal, lanjut scan.

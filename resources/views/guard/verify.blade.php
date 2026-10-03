@@ -10,6 +10,37 @@
             icon="shield"
         />
 
+        <form method="POST" action="{{ route('guard.deposit.confirm-code') }}" class="card mb-6 space-y-4 p-6">
+            @csrf
+            <div>
+                <label for="deposit-code" class="label">Kode laporan titipan (KP-...)</label>
+                <p class="help mb-2">Penemu tunjukkan QR titip → scan atau ketik kodenya. 1 langkah: langsung STORED + terkonfirmasi.</p>
+                <input
+                    type="text"
+                    name="deposit_code"
+                    id="deposit-code"
+                    value="{{ old('deposit_code') }}"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    placeholder="KP-XXXXXXXX"
+                    required
+                    class="field text-center font-mono tracking-[0.15em] uppercase"
+                >
+                @error('deposit_code')
+                    <p class="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-rose-600">
+                        <x-icon name="alert-triangle" class="h-4 w-4" /> {{ $message }}
+                    </p>
+                @enderror
+            </div>
+            <div class="flex gap-3">
+                <button type="button" data-qr-scan="deposit-code" class="hidden rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
+                    Scan QR titip
+                </button>
+                <x-button type="submit" size="sm" variant="success" icon="check">Konfirmasi titip 1 langkah</x-button>
+            </div>
+        </form>
+
         @if ($lastPickup)
             <x-alert type="success" title="Barang telah diserahkan" class="mb-6">
                 <p>

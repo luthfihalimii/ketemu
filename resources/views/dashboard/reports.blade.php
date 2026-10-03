@@ -55,7 +55,7 @@
                                             </a>
                                         </span>
                                     @else
-                                        <span class="text-slate-600">Belum dicocokkan dengan barang temuan.</span>
+                                        <span class="text-slate-600">Belum ditautkan (opsional — klaim langsung dari katalog tetap bisa).</span>
                                     @endif
                                 </p>
                             @endif
@@ -73,13 +73,27 @@
                                     </p>
                                 </div>
                             @endif
+
+                            @if ($item->status === \App\Enums\ItemStatus::WaitingDeposit && $item->hold_until)
+                                @if ($item->isHoldOverdue())
+                                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800 ring-1 ring-rose-600/20 ring-inset">
+                                        Tenggat titip lewat — segera titipkan ke satpam
+                                    </p>
+                                @else
+                                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-600/20 ring-inset">
+                                        Wajib titip sebelum {{ $item->hold_until->translatedFormat('d M, H:i') }}
+                                    </p>
+                                @endif
+                            @endif
                         </div>
 
                         <div class="flex shrink-0 flex-col gap-2 sm:items-end">
                             @if ($item->status === \App\Enums\ItemStatus::WaitingDeposit)
+                                <img src="{{ app(\App\Services\PickupQrService::class)->svgDataUri($item->code) }}" alt="QR titip {{ $item->title }}" width="120" height="120" class="h-24 w-24 rounded-xl bg-white p-1.5 ring-1 ring-slate-200" loading="lazy" decoding="async">
+                                <p class="text-xs text-slate-500">Tunjukkan ke satpam</p>
                                 <form method="POST" action="{{ route('items.confirm-deposit', $item) }}">
                                     @csrf
-                                    <x-button type="submit" variant="success" size="sm" icon="check">
+                                    <x-button type="submit" variant="secondary" size="sm" icon="check">
                                         Sudah dititipkan
                                     </x-button>
                                 </form>
@@ -87,7 +101,7 @@
 
                             @if ($item->isLostReport() && $item->status === \App\Enums\ItemStatus::Reported)
                                 <x-button :href="route('dashboard.matches', $item)" variant="secondary" size="sm" icon="search">
-                                    {{ $item->matchedItem ? 'Ubah kecocokan' : 'Cari kecocokan' }}
+                                    {{ $item->matchedItem ? 'Ubah tautan (opsional)' : 'Lihat yang mirip (opsional)' }}
                                 </x-button>
                             @endif
 

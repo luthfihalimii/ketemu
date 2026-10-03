@@ -5,6 +5,7 @@ namespace Tests\Feature\Items;
 use App\Enums\ItemStatus;
 use App\Models\Item;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\BuildsItemFlow;
 use Tests\TestCase;
@@ -31,6 +32,8 @@ class FoundItemReportTest extends TestCase
             'deposit_location_id' => $post->id,
             'verification_question' => 'Apa yang ada di dalam dompet?',
             'verification_answer' => 'Ada stiker bulan sabit di bagian dalam',
+            'photo' => UploadedFile::fake()->image('dompet.jpg', 800, 600),
+            'hold_promise' => '1',
         ]);
 
         $item = Item::query()->latest('id')->firstOrFail();
@@ -54,6 +57,8 @@ class FoundItemReportTest extends TestCase
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ada nama tertulis di kotaknya',
+            'photo' => UploadedFile::fake()->image('earphone.jpg', 800, 600),
+            'hold_promise' => '1',
         ]);
 
         $item = Item::query()->latest('id')->firstOrFail();
@@ -110,6 +115,8 @@ class FoundItemReportTest extends TestCase
             // A plain building is not a valid place to hand an item over.
             'deposit_location_id' => $location->id,
             'verification_answer' => 'Ada bordir nama di bagian belakang',
+            'photo' => UploadedFile::fake()->image('jaket.jpg', 800, 600),
+            'hold_promise' => '1',
         ])->assertSessionHasErrors('deposit_location_id');
 
         $this->assertDatabaseCount('items', 0);
@@ -127,6 +134,8 @@ class FoundItemReportTest extends TestCase
             'location_id' => $location->id,
             'occurred_at' => now()->subHour()->toDateTimeString(),
             'deposit_location_id' => $post->id,
+            'photo' => UploadedFile::fake()->image('botol.jpg', 800, 600),
+            'hold_promise' => '1',
         ])->assertSessionHasErrors('verification_answer');
     }
 
@@ -143,6 +152,8 @@ class FoundItemReportTest extends TestCase
             'occurred_at' => now()->addDay()->toDateTimeString(),
             'deposit_location_id' => $post->id,
             'verification_answer' => 'Ada gantungan kunci berbentuk bola',
+            'photo' => UploadedFile::fake()->image('kunci.jpg', 800, 600),
+            'hold_promise' => '1',
         ])->assertSessionHasErrors('occurred_at');
     }
 
