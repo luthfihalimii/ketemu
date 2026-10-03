@@ -17,12 +17,12 @@ class DemoUserSeeder extends Seeder
     public function run(): void
     {
         if (app()->isProduction()) {
-            $this->command?->warn('DemoUserSeeder dilewati pada environment production.');
+            $this->command->warn('DemoUserSeeder dilewati pada environment production.');
 
             return;
         }
 
-        $password = env('DEMO_PASSWORD') ?: Str::password(16);
+        $password = config('ketemupens.demo.password') ?: Str::password(16);
 
         $accounts = [
             ['name' => 'Admin KETEMU', 'email' => 'admin@ketemupens.test', 'role' => Role::Admin],
@@ -32,17 +32,15 @@ class DemoUserSeeder extends Seeder
         ];
 
         foreach ($accounts as $account) {
-            User::query()->updateOrCreate(
-                ['email' => $account['email']],
-                [
-                    'name' => $account['name'],
-                    'password' => Hash::make($password),
-                    'role' => $account['role'],
-                    'email_verified_at' => now(),
-                ],
-            );
+            $user = User::query()->firstOrNew(['email' => $account['email']]);
+            $user->forceFill([
+                'name' => $account['name'],
+                'password' => Hash::make($password),
+                'role' => $account['role'],
+                'email_verified_at' => now(),
+            ])->save();
         }
 
-        $this->command?->info('Akun demo dibuat dengan password: '.$password);
+        $this->command->info('Akun demo dibuat dengan password: '.$password);
     }
 }

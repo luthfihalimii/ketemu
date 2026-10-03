@@ -26,8 +26,11 @@ penerima** saat menyerahkan barang. Nomor identitas disimpan di `pickup_codes.re
 nama di `recipient_name`, dan keduanya masuk audit log `pickup.completed`. Tanpa keduanya, kode tidak
 bisa diuangkan.
 
-Catatan: nomor identitas adalah data pribadi. Batasi akses tabel `pickup_codes` dan tetapkan masa
-retensinya sesuai kebijakan kampus.
+Catatan: nomor identitas adalah data pribadi. Kolom `recipient_id_number` dan
+`recipient_name` disimpan **terenkripsi at-rest** dan dihapus otomatis oleh
+`ketemupens:purge-pii` (harian) setelah serah-terima melampaui masa retensi
+(default 90 hari, atur lewat `PII_RETENTION_DAYS`). Audit log `pickup.completed`
+hanya menyimpan nomor identitas dalam bentuk tersamar (4 digit terakhir).
 
 ## Laporan hilang dan barang temuan
 
@@ -62,6 +65,45 @@ php artisan serve
 ```
 
 Untuk development tanpa MySQL, ubah `DB_CONNECTION=sqlite` di `.env`.
+
+## Keamanan kredensial
+
+- `.env` **tidak pernah** boleh masuk git (CI memeriksa ini). Kredensial produksi
+  (password DB, API key) hanya boleh berada di server, bukan di `.env` mesin developer.
+- Jika kredensial pernah terekspos, lakukan rotasi. Perhatian: merotasi `APP_KEY`
+  meng-invalidate semua `code_encrypted` kode pengambilan yang masih aktif — admin
+  harus menerbitkan ulang kode untuk klaim yang menunggu pengambilan
+  (**Moderasi Klaim → Terbitkan kode baru**), dan menjalankan
+  `php artisan ketemupens:encrypt-pii` untuk data penerima lama.
+- `SESSION_ENCRYPT=true` wajib di production agar isi session terenkripsi.
+
+## Email kampus & verifikasi
+
+Registrasi publik hanya menerima alamat email kampus PENS
+(pola di `config/ketemupens.php` → `auth.allowed_email_patterns`):
+
+- `*@*.student.pens.ac.id` — mahasiswa semua prodi (mis. `@tif.student.pens.ac.id`)
+- `*@pens.ac.id` — dosen/staff
+
+Setelah mendaftar, pengguna **wajib memverifikasi email** sebelum bisa melapor
+atau mengklaim. Dasbor dan notifikasi tetap bisa diakses agar tidak deadlock.
+
+**Prasyarat deployment:** `MAIL_MAILER` harus diarahkan ke SMTP sungguhan agar
+email verifikasi benar-benar terkirim. Selama mailer masih `log`, channel `mail`
+pada notifikasi tidak didaftarkan (lihat `ActivityNotification::via()`).
+
+## Antrian notifikasi
+
+Notifikasi (`ActivityNotification`) dijalankan lewat antrian (`ShouldQueue` +
+`afterCommit`), sehingga pengiriman email/Telegram tidak pernah menahan atau
+me-rollback transaksi bisnis. Di production ini berarti **worker antrian wajib
+berjalan** — tanpa worker, notifikasi tidak akan terkirim:
+
+```bash
+php artisan queue:work
+```
+
+Di development, `QUEUE_CONNECTION=sync` tetap aman (notifikasi terkirim langsung).
 
 ### Akun demo
 
@@ -99,7 +141,12 @@ Scheduler yang sama menandai laporan temuan yang **belum dikonfirmasi dititipkan
 - Penemu melihat panel "Perlu ditindaklanjuti" di halaman Riwayat.
 - Admin melihat antrean **Moderasi → Belum Dititipkan**.
 
-Di production, jalankan `php artisan schedule:run` tiap menit lewat cron. Durasi diatur lewat `ITEM_STALE_AFTER_DAYS`, `ITEM_DEPOSIT_REMINDER_AFTER_DAYS`, dan `PICKUP_CODE_VALIDITY_MINUTES`.
+Scheduler yang sama juga **melepaskan klaim yang ditinggal**: klaim tersetujui
+yang kode pengambilannya kedaluwarsa lebih dari `PICKUP_CODE_RELEASE_GRACE_DAYS`
+hari (default 3) dibatalkan otomatis, barang kembali `STORED`, dan pemilik
+dinotifikasi untuk meminta kode baru via admin.
+
+Di production, jalankan `php artisan schedule:run` tiap menit lewat cron. Durasi diatur lewat `ITEM_STALE_AFTER_DAYS`, `ITEM_DEPOSIT_REMINDER_AFTER_DAYS`, `PICKUP_CODE_VALIDITY_MINUTES`, dan `PICKUP_CODE_RELEASE_GRACE_DAYS`.
 
 ## Notifikasi
 

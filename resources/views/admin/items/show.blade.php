@@ -10,13 +10,6 @@
             <span class="text-slate-600">{{ $item->title }}</span>
         </nav>
 
-        @if (session('reissued_code'))
-            <x-alert type="success" title="Kode pengambilan baru" class="mb-6">
-                <p class="font-mono text-lg font-bold tracking-[0.3em]">{{ session('reissued_code') }}</p>
-                <p class="mt-1 text-sm">Sampaikan kode ini kepada pemilik terverifikasi.</p>
-            </x-alert>
-        @endif
-
         @if ($item->isFlagged())
             <x-alert type="warning" title="Ditandai mencurigakan" :dismissible="false" class="mb-6">
                 {{ $item->flag_reason }}
@@ -28,10 +21,11 @@
                 <div class="card p-6">
                     <div class="flex flex-wrap items-center gap-2">
                         <x-status-badge :status="$item->status" />
-                        <span class="font-mono text-xs text-slate-400">{{ $item->code }}</span>
+                        <span class="break-all font-mono text-xs text-slate-600">{{ $item->code }}</span>
                     </div>
 
                     <h1 class="mt-3 text-2xl font-bold text-slate-900">{{ $item->title }}</h1>
+                    <div class="mt-4 aspect-16/10 overflow-hidden rounded-xl"><x-item-photo :item="$item" :contain="true" :src="$item->archived_photo_path ? route('admin.items.photo', $item) : null" /></div>
                     <p class="mt-1 text-sm text-slate-600">{{ $item->description }}</p>
 
                     <dl class="mt-5 grid gap-3 text-sm sm:grid-cols-2">
@@ -55,7 +49,7 @@
                                             {{ $item->matchedItem->title }} ({{ $item->matchedItem->code }})
                                         </a>
                                     @else
-                                        <span class="text-slate-400">Belum dicocokkan</span>
+                                        <span class="text-slate-600">Belum dicocokkan</span>
                                     @endif
                                 </dd>
                             </div>
@@ -66,7 +60,7 @@
                         <div class="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-200 ring-inset">
                             <p class="font-semibold">Catatan moderasi</p>
                             <p class="mt-1">{{ $item->moderation_note }}</p>
-                            <p class="mt-1 text-xs text-slate-400">
+                            <p class="mt-1 text-xs text-slate-600">
                                 Oleh {{ $item->moderator?->name ?? 'admin' }} pada {{ $item->moderated_at?->translatedFormat('d F Y, H:i') }}
                             </p>
                         </div>
@@ -103,14 +97,14 @@
                                         @if ($claim->status->isActive())
                                             <form method="POST" action="{{ route('admin.claims.reject', $claim) }}" class="flex items-center gap-2" data-confirm="Tolak klaim ini?">
                                                 @csrf
-                                                <input type="text" name="reason" placeholder="Alasan" required
+                                                <input type="text" name="reason" aria-label="Alasan penolakan klaim {{ $claim->id }}" value="{{ old('reason') }}" placeholder="Alasan" required
                                                        class="field w-40 px-3 py-1.5 text-sm">
                                                 <x-button type="submit" variant="danger" size="sm">Tolak klaim</x-button>
                                             </form>
                                         @endif
 
                                         @if ($claim->status === \App\Enums\ClaimStatus::Approved)
-                                            <form method="POST" action="{{ route('admin.claims.reissue', $claim) }}">
+                                            <form method="POST" action="{{ route('admin.claims.reissue', $claim) }}" data-confirm="Terbitkan kode baru? Kode pengambilan lama akan dibatalkan.">
                                                 @csrf
                                                 <x-button type="submit" variant="secondary" size="sm" icon="ticket">Terbitkan kode baru</x-button>
                                             </form>
@@ -135,7 +129,7 @@
                                 <x-button type="submit" variant="secondary" size="sm" block icon="check">Hapus tanda</x-button>
                             @else
                                 <div class="space-y-2">
-                                    <input type="text" name="reason" placeholder="Alasan mencurigakan" required class="field px-3 py-2 text-sm">
+                                    <x-input name="reason" id="flag-reason" label="Alasan mencurigakan" required />
                                     @error('reason') <p class="text-sm text-rose-600">{{ $message }}</p> @enderror
                                     <x-button type="submit" variant="secondary" size="sm" block icon="alert-triangle">Tandai mencurigakan</x-button>
                                 </div>
@@ -159,7 +153,7 @@
                         @if ($canReject)
                             <form method="POST" action="{{ route('admin.items.reject', $item) }}" class="space-y-2" data-confirm="Nonaktifkan laporan ini dan batalkan semua klaim aktif?">
                                 @csrf
-                                <input type="text" name="reason" placeholder="Alasan penonaktifan" required class="field px-3 py-2 text-sm">
+                                <x-input name="reason" id="reject-reason" label="Alasan penonaktifan" required />
                                 @error('reason') <p class="text-sm text-rose-600">{{ $message }}</p> @enderror
                                 <x-button type="submit" variant="danger" size="sm" block icon="x-circle">Nonaktifkan laporan</x-button>
                             </form>

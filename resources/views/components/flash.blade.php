@@ -16,7 +16,7 @@
     ];
 @endphp
 
-<div class="fixed inset-x-0 top-4 z-50 mx-auto w-full max-w-md px-4">
+<div class="mx-auto w-full max-w-7xl px-4 pt-3" aria-label="Pemberitahuan">
     @if (session('status'))
         <div
             data-flash
@@ -25,13 +25,13 @@
         >
             <x-icon name="check-circle" class="mt-0.5 h-5 w-5" />
             <p class="flex-1 text-sm font-medium">{{ session('status') }}</p>
-            <button type="button" onclick="this.parentElement.remove()" class="rounded-lg p-1 hover:bg-black/5" aria-label="Tutup">
+            <button type="button" data-dismiss class="hidden rounded-lg p-1 hover:bg-black/5" aria-label="Tutup">
                 <x-icon name="x" class="h-4 w-4" />
             </button>
         </div>
     @endif
 
-    @if (isset($errors) && $errors->any() && ! $errors->hasBag('default'))
+    @if (isset($errors) && collect($errors->getBags())->contains(fn ($bag) => $bag->any()))
         <div
             data-flash
             class="mt-2 flex items-start gap-3 rounded-xl border p-4 shadow-md {{ $styles['error'] }}"
@@ -41,12 +41,12 @@
             <div class="flex-1 text-sm font-medium">
                 <p class="font-semibold">Ada yang perlu diperbaiki.</p>
                 <ul class="mt-1 list-inside list-disc space-y-0.5">
-                    @foreach ($errors->all() as $error)
+                    @foreach (collect($errors->getBags())->flatMap(fn ($bag) => $bag->all())->unique() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
-            <button type="button" onclick="this.parentElement.remove()" class="rounded-lg p-1 hover:bg-black/5" aria-label="Tutup">
+            <button type="button" data-dismiss class="hidden rounded-lg p-1 hover:bg-black/5" aria-label="Tutup">
                 <x-icon name="x" class="h-4 w-4" />
             </button>
         </div>

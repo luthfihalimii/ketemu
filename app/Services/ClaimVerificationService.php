@@ -52,13 +52,13 @@ class ClaimVerificationService
 
             $claim = $locked->claims()->firstOrNew(['user_id' => $claimant->id]);
 
-            if ($claim->exists && ! $claim->status->isActive() && $claim->status !== ClaimStatus::Rejected) {
+            if ($claim->exists && $claim->status === ClaimStatus::Completed) {
                 throw ValidationException::withMessages([
                     'answer' => 'Klaim untuk barang ini sudah selesai diproses.',
                 ]);
             }
 
-            if ($claim->exists && $claim->status === ClaimStatus::Rejected) {
+            if ($claim->exists && ($claim->status === ClaimStatus::Rejected || $claim->attempt_count >= self::MAX_ATTEMPTS)) {
                 throw ValidationException::withMessages([
                     'answer' => 'Batas percobaan verifikasi untuk barang ini sudah habis.',
                 ]);
@@ -72,6 +72,9 @@ class ClaimVerificationService
                 'status' => $correct ? ClaimStatus::Approved : ClaimStatus::Submitted,
                 'is_verified' => $correct,
                 'attempt_count' => $attempts,
+                'verified_at' => null,
+                'rejected_at' => null,
+                'rejection_reason' => null,
             ]);
 
             $plainCode = null;
@@ -80,7 +83,6 @@ class ClaimVerificationService
                 $claim->verified_at = now();
                 $claim->save();
 
-                $locked->claim_attempts = $attempts;
                 $this->advanceToReadyForPickup($locked);
 
                 $issued = $this->pickupCodes->issue($claim);

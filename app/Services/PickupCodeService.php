@@ -65,6 +65,9 @@ class PickupCodeService
     {
         $pickupCode = PickupCode::query()
             ->where('code_hash', $this->hash($this->normalize($plain)))
+            ->where('status', PickupCodeStatus::Active->value)
+            ->where('expires_at', '>', now())
+            ->latest('id')
             ->first();
 
         if ($pickupCode === null) {
@@ -76,12 +79,13 @@ class PickupCodeService
 
     public function generatePlainCode(): string
     {
-        // Grouped for readability when read aloud to security staff.
-        return sprintf(
-            '%s-%s',
-            Str::upper(Str::random(4)),
-            Str::upper(Str::random(4)),
-        );
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $code = '';
+        for ($i = 0; $i < 8; $i++) {
+            $code .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+
+        return substr($code, 0, 4).'-'.substr($code, 4);
     }
 
     public function normalize(string $plain): string
@@ -93,7 +97,7 @@ class PickupCodeService
      * Fingerprint a plaintext code for storage and lookup.
      *
      * The context prefix domain-separates this HMAC from any other use of the
-     * application key. ponytail: still one shared secret; move to a dedicated
+     * application key. TODO: still one shared secret; move to a dedicated
      * PICKUP_CODE_KEY if the app key ever has to be rotated without stranding
      * live pickup codes (a dedicated key would also need a re-hash migration).
      */

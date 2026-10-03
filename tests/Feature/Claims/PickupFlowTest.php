@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\BuildsItemFlow;
 use Tests\TestCase;
@@ -52,12 +53,19 @@ class PickupFlowTest extends TestCase
 
         $code = $item->claims()->firstOrFail()->pickupCode;
 
+        // Kolom tersimpan terenkripsi, tapi model mengembalikan plaintext.
         $this->assertSame('2141720099', $code->recipient_id_number);
         $this->assertSame('Budi Santoso', $code->recipient_name);
 
+        $raw = DB::table('pickup_codes')->where('id', $code->id)->first();
+        $this->assertStringNotContainsString('2141720099', (string) $raw->recipient_id_number);
+        $this->assertStringNotContainsString('Budi Santoso', (string) $raw->recipient_name);
+
+        // Audit log hanya menyimpan nomor identitas tersamar.
         $log = AuditLog::query()->where('event', 'pickup.completed')->firstOrFail();
 
-        $this->assertSame('2141720099', $log->properties['recipient_id_number']);
+        $this->assertSame('******0099', $log->properties['recipient_id_number_masked']);
+        $this->assertStringNotContainsString('2141720099', (string) json_encode($log->properties));
         $this->assertSame('Budi Santoso', $log->properties['recipient_name']);
     }
 

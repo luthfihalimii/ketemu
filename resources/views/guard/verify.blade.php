@@ -44,6 +44,13 @@
                     autofocus
                     class="field text-center font-mono text-2xl tracking-[0.3em] uppercase"
                 >
+                <div class="mt-3">
+                    <button type="button" data-qr-scan="code" class="hidden rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
+                        Scan QR mahasiswa
+                    </button>
+                    <p data-qr-scan-status role="status" class="mt-1 text-xs text-slate-500"></p>
+                    <video data-qr-scan-video playsinline muted class="mt-2 hidden max-h-64 w-full rounded-xl bg-black"></video>
+                </div>
                 @error('code')
                     <p class="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-rose-600">
                         <x-icon name="alert-triangle" class="h-4 w-4" /> {{ $message }}
@@ -86,8 +93,29 @@
             </ol>
         </form>
 
-        <p class="mt-4 text-center text-xs text-slate-400">
+        <p class="mt-4 text-center text-xs text-slate-600">
             Setiap percobaan verifikasi dan identitas penerima dicatat untuk keperluan audit.
         </p>
+
+        @if ($pendingDeposits->isNotEmpty())
+            <div class="card mt-6 p-6">
+                <h2 class="text-base font-semibold text-slate-900">Menunggu konfirmasi fisik ({{ $pendingDeposits->count() }})</h2>
+                <p class="mt-1 text-sm text-slate-600">Pastikan barang fisik sudah ada di pos sebelum menekan konfirmasi.</p>
+                <ul class="mt-4 space-y-3">
+                    @foreach ($pendingDeposits as $pending)
+                        <li class="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 p-3 text-sm ring-1 ring-slate-200 ring-inset">
+                            <span class="min-w-0 flex-1">
+                                <span class="block font-semibold text-slate-900">{{ $pending->title }}</span>
+                                <span class="block font-mono text-xs text-slate-500">{{ $pending->code }} · {{ $pending->depositLocation?->name ?? 'Pos belum jelas' }}</span>
+                            </span>
+                            <form method="POST" action="{{ route('guard.deposit.confirm', $pending) }}">
+                                @csrf
+                                <x-button type="submit" size="sm" variant="success" icon="check">Konfirmasi fisik</x-button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
     </div>
 @endsection

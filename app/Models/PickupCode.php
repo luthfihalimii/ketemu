@@ -37,6 +37,10 @@ class PickupCode extends Model
         return [
             'status' => PickupCodeStatus::class,
             'code_encrypted' => 'encrypted',
+            // PII penerima dienkripsi at-rest; dibersihkan otomatis oleh
+            // ketemupens:purge-pii setelah masa retensi berakhir.
+            'recipient_id_number' => 'encrypted',
+            'recipient_name' => 'encrypted',
             'expires_at' => 'datetime',
             'used_at' => 'datetime',
             'verified_at' => 'datetime',

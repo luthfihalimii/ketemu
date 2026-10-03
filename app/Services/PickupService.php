@@ -10,19 +10,36 @@ use App\Models\PickupCode;
 use App\Models\User;
 use App\Notifications\ActivityNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class PickupService
 {
     /**
-     * Maximum wrong code entries before a code is cancelled.
+     * Maximum consecutive wrong code entries before the guard is locked out
+     * temporarily. Wrong codes never resolve to a record (lookup is by hash),
+     * so brute-force protection is tracked per guard, not per code.
      */
     public const MAX_ATTEMPTS = 5;
+
+    /**
+     * Minutes a guard stays locked out after MAX_ATTEMPTS consecutive misses.
+     */
+    public const LOCKOUT_MINUTES = 15;
 
     public function __construct(
         private readonly PickupCodeService $pickupCodes,
         private readonly AuditLogger $audit,
     ) {}
+
+    /**
+     * Mask an identity number for the audit trail, keeping only the last
+     * four digits so a handover can still be cross-checked.
+     */
+    public static function maskIdNumber(string $idNumber): string
+    {
+        return str_repeat('*', max(0, strlen($idNumber) - 4)).substr($idNumber, -4);
+    }
 
     /**
      * Verify a pickup code at the security post and release the item.
@@ -39,21 +56,40 @@ class PickupService
         string $recipientIdNumber,
         string $recipientName,
     ): PickupCode {
-        return DB::transaction(function () use ($plainCode, $guard, $recipientIdNumber, $recipientName) {
-            $pickupCode = $this->pickupCodes->findActiveByPlainText($plainCode);
+        $limiterKey = 'pickup-redeem-fail|'.$guard->id;
 
-            if ($pickupCode === null) {
-                $this->audit->log(
-                    event: 'pickup.failed',
-                    description: 'Kode pengambilan tidak ditemukan atau tidak aktif.',
-                    user: $guard,
-                );
+        if (RateLimiter::tooManyAttempts($limiterKey, self::MAX_ATTEMPTS)) {
+            $seconds = RateLimiter::availableIn($limiterKey);
 
-                throw ValidationException::withMessages([
-                    'code' => 'Kode pengambilan tidak valid atau sudah kedaluwarsa.',
-                ]);
-            }
+            $this->audit->log(
+                event: 'pickup.locked_out',
+                description: 'Terlalu banyak kode salah berturut-turut; verifikasi dikunci sementara.',
+                user: $guard,
+                properties: ['retry_after_seconds' => $seconds],
+            );
 
+            throw ValidationException::withMessages([
+                'code' => 'Terlalu banyak percobaan kode salah. Coba lagi dalam '.(int) ceil($seconds / 60).' menit.',
+            ]);
+        }
+
+        $pickupCode = $this->pickupCodes->findActiveByPlainText($plainCode);
+
+        if ($pickupCode === null) {
+            RateLimiter::hit($limiterKey, self::LOCKOUT_MINUTES * 60);
+
+            $this->audit->log(
+                event: 'pickup.failed',
+                description: 'Kode pengambilan tidak ditemukan atau tidak aktif.',
+                user: $guard,
+            );
+
+            throw ValidationException::withMessages([
+                'code' => 'Kode pengambilan tidak valid atau sudah kedaluwarsa.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($pickupCode, $guard, $recipientIdNumber, $recipientName, $limiterKey) {
             $pickupCode = PickupCode::query()
                 ->whereKey($pickupCode->getKey())
                 ->lockForUpdate()
@@ -88,7 +124,7 @@ class PickupService
 
             // Close any lost report that was explicitly linked to this item:
             // its owner now has the belonging back.
-            foreach ($item->matchedReports()->get() as $lostReport) {
+            foreach ($item->matchedReports()->where('user_id', $pickupCode->user_id)->with('user')->lockForUpdate()->get() as $lostReport) {
                 if (! $lostReport->status->canTransitionTo(ItemStatus::Returned)) {
                     continue;
                 }
@@ -106,6 +142,9 @@ class PickupService
                 ));
             }
 
+            // Serah-terima berhasil: reset penghitung tebakan salah petugas.
+            RateLimiter::clear($limiterKey);
+
             $pickupCode->claim()->update([
                 'status' => ClaimStatus::Completed,
                 'completed_at' => now(),
@@ -117,7 +156,9 @@ class PickupService
                 auditable: $item,
                 properties: [
                     'pickup_code_id' => $pickupCode->id,
-                    'recipient_id_number' => $recipientIdNumber,
+                    // Nomor identitas utuh hanya disimpan terenkripsi di
+                    // pickup_codes; audit log cukup menyimpan bentuk tersamar.
+                    'recipient_id_number_masked' => self::maskIdNumber($recipientIdNumber),
                     'recipient_name' => $recipientName,
                 ],
                 user: $guard,

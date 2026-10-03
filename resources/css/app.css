@@ -39,7 +39,7 @@
 
 @utility field {
     @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-xs
-        transition placeholder:text-slate-400
+        transition placeholder:text-slate-500
         focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none
         disabled:cursor-not-allowed disabled:bg-slate-100;
 }

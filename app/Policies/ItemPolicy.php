@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\ItemStatus;
 use App\Models\Item;
 use App\Models\User;
 
@@ -44,7 +45,7 @@ class ItemPolicy
      */
     public function confirmDeposit(User $user, Item $item): bool
     {
-        if (! $item->isFoundReport()) {
+        if (! $item->isFoundReport() || $item->status !== ItemStatus::WaitingDeposit) {
             return false;
         }
 

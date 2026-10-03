@@ -22,7 +22,7 @@ class AuditLogController extends Controller
 
         $logs = AuditLog::query()
             ->with('user:id,name,email')
-            ->when(filled($filters['event'] ?? null), fn ($query) => $query->where('event', 'like', $filters['event'].'%'))
+            ->when(filled($filters['event'] ?? null), fn ($query) => $query->whereRaw("event LIKE ? ESCAPE '!'", [str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $filters['event']).'%']))
             ->when(filled($filters['user'] ?? null), fn ($query) => $query->where('user_id', $filters['user']))
             ->latest('created_at')
             ->paginate(30)

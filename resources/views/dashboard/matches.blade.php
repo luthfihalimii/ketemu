@@ -46,6 +46,11 @@
             </form>
         @endif
 
+        <x-alert type="info" :dismissible="false" class="mb-6">
+            Skor kecocokan dihitung otomatis (teks + kategori + lokasi + waktu) dan
+            <strong>bukan bukti kepemilikan</strong>. Tautan tidak memberi hak ambil.
+        </x-alert>
+
         @if ($candidates->isEmpty())
             <x-empty-state
                 icon="inbox"
@@ -56,13 +61,21 @@
             </x-empty-state>
         @else
             <h2 class="mb-4 text-base font-semibold text-slate-900">
-                Kandidat dari kategori {{ $item->category?->name ?? 'yang sama' }}
+                Kandidat berperingkat untuk laporanmu
             </h2>
 
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($candidates as $candidate)
                     <div class="flex flex-col gap-3">
                         <x-item-card :item="$candidate" />
+                        @if (($candidate->match_score ?? 0) > 0)
+                            <p class="rounded-xl bg-brand-50 px-4 py-2 text-center text-sm ring-1 ring-brand-200 ring-inset">
+                                <span class="font-bold text-brand-800">Kemiripan {{ $candidate->match_score }}%</span>
+                                @if (! empty($candidate->match_reasons))
+                                    <span class="block text-xs text-slate-600">{{ implode(' · ', $candidate->match_reasons) }}</span>
+                                @endif
+                            </p>
+                        @endif
 
                         @if ($item->matched_item_id === $candidate->id)
                             <span class="rounded-xl bg-emerald-50 px-4 py-2.5 text-center text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 ring-inset">

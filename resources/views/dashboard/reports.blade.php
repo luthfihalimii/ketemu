@@ -26,23 +26,13 @@
                 @foreach ($items as $item)
                     <div class="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
                         <div class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                            @if ($item->photo_path)
-                                <img
-                                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($item->photo_path) }}"
-                                    alt="Foto {{ $item->title }}"
-                                    class="h-full w-full object-cover"
-                                >
-                            @else
-                                <div class="flex h-full w-full items-center justify-center text-slate-300">
-                                    <x-icon name="package" class="h-7 w-7" />
-                                </div>
-                            @endif
+                            <x-item-photo :item="$item" />
                         </div>
 
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <x-status-badge :status="$item->status" />
-                                <span class="font-mono text-xs text-slate-400">{{ $item->code }}</span>
+                                <span class="break-all font-mono text-xs text-slate-600">{{ $item->code }}</span>
                             </div>
 
                             <a href="{{ route('items.show', $item) }}" class="mt-1.5 block font-semibold text-slate-900 hover:text-brand-700">
@@ -65,7 +55,7 @@
                                             </a>
                                         </span>
                                     @else
-                                        <span class="text-slate-400">Belum dicocokkan dengan barang temuan.</span>
+                                        <span class="text-slate-600">Belum dicocokkan dengan barang temuan.</span>
                                     @endif
                                 </p>
                             @endif

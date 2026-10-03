@@ -171,7 +171,13 @@ class ClaimVerificationTest extends TestCase
         $plain = $this->verifyClaim($item, $claimant);
         $claim = $item->claims()->where('user_id', $claimant->id)->firstOrFail();
 
+        // Halaman kode dilindungi konfirmasi password.
         $this->actingAs($claimant)
+            ->get(route('claims.pickup', $claim))
+            ->assertRedirect(route('password.confirm'));
+
+        $this->actingAs($claimant)
+            ->withConfirmedPassword()
             ->get(route('claims.pickup', $claim))
             ->assertOk()
             ->assertSee($plain, escape: false)

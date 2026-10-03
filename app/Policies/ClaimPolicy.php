@@ -27,6 +27,11 @@ class ClaimPolicy
         return true;
     }
 
+    public function viewPickupCode(User $user, Claim $claim): bool
+    {
+        return $user->id === $claim->user_id;
+    }
+
     public function cancel(User $user, Claim $claim): bool
     {
         return $user->id === $claim->user_id && $claim->status->isActive();

@@ -1,26 +1,12 @@
 @props(['item'])
 
-@php
-    $photo = $item->photo_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($item->photo_path) : null;
-@endphp
 
 <a
     href="{{ route('items.show', $item) }}"
     {{ $attributes->merge(['class' => 'card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md']) }}
 >
     <div class="relative aspect-4/3 overflow-hidden bg-slate-100">
-        @if ($photo)
-            <img
-                src="{{ $photo }}"
-                alt="Foto {{ $item->title }}"
-                loading="lazy"
-                class="h-full w-full object-cover transition duration-200 group-hover:scale-[1.03]"
-            >
-        @else
-            <div class="flex h-full w-full items-center justify-center text-slate-300">
-                <x-icon name="package" class="h-10 w-10" />
-            </div>
-        @endif
+        <x-item-photo :item="$item" class="transition duration-200 group-hover:scale-[1.03]" />
 
         <div class="absolute top-3 left-3">
             <x-status-badge :status="$item->status" class="shadow-xs" />

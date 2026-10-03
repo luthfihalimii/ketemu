@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\InvalidStatusTransitionException;
+use App\Http\Middleware\EnsureNotBanned;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -11,13 +13,19 @@ use Symfony\Component\HttpFoundation\Response;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO);
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
+            'not-banned' => EnsureNotBanned::class,
         ]);
+
+        // Akun dinonaktifkan langsung ditolak di semua rute web terotentikasi.
+        $middleware->appendToGroup('web', EnsureNotBanned::class);
 
         // Telegram POSTs the bot update directly and cannot carry a CSRF token;
         // the shared-secret header in TelegramWebhookController is its guard.
@@ -30,6 +38,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (InvalidStatusTransitionException $exception, Request $request) {
+            $message = 'Status barang sudah berubah. Muat ulang halaman dan coba kembali.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 409);
+            }
+
+            return back()->withErrors(['status' => $message]);
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
@@ -39,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'password',
             'password_confirmation',
             'answer',
+            'verification_answer',
         ]);
 
         // Exception responses unwind past the middleware stack in a way that

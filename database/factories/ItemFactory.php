@@ -25,6 +25,7 @@ class ItemFactory extends Factory
             'category_id' => Category::factory(),
             'title' => Str::title(fake()->words(2, true)),
             'description' => fake()->sentence(),
+            'private_note' => null,
             'location_id' => Location::factory(),
             'location_detail' => null,
             'occurred_at' => now()->subHours(fake()->numberBetween(1, 72)),
@@ -49,6 +50,9 @@ class ItemFactory extends Factory
             'status' => ItemStatus::Reported,
             'deposit_location_id' => null,
             'stored_at' => null,
+            // Laporan hilang tidak punya jawaban verifikasi; jawaban ditulis
+            // oleh penemu, bukan pemilik.
+            'verification_answer' => null,
         ]);
     }
 }

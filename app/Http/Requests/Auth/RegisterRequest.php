@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Rules\AllowedCampusEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -19,7 +20,9 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'min:3', 'max:100'],
-            'email' => ['required', 'string', 'email:rfc,dns', 'max:150', 'unique:users,email'],
+            // No DNS check: per-program student sub-domains often have no MX
+            // record of their own; campus restriction is enforced by the rule.
+            'email' => ['required', 'string', 'email:rfc', 'max:150', 'unique:users,email', new AllowedCampusEmail],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ];
     }

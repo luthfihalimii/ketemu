@@ -23,7 +23,7 @@ class AuditLogger
         ?User $user = null,
     ): AuditLog {
         return AuditLog::create([
-            'user_id' => $user?->id ?? auth()->id(),
+            'user_id' => $user?->id ?? auth()->id(), // @phpstan-ignore nullsafe.neverNull (mixed; jelas bisa null)
             'event' => $event,
             'auditable_type' => $auditable?->getMorphClass(),
             'auditable_id' => $auditable?->getKey(),

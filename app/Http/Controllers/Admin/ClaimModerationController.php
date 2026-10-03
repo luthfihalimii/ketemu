@@ -45,6 +45,7 @@ class ClaimModerationController extends Controller
 
     public function reject(ModerateItemRequest $request, Claim $claim): RedirectResponse
     {
+        Gate::authorize('moderate', $claim->item);
         try {
             $this->moderation->rejectClaim($claim, $request->validated('reason'), $request->user());
         } catch (ValidationException $exception) {
@@ -59,13 +60,14 @@ class ClaimModerationController extends Controller
         Gate::authorize('moderate', $claim->item);
 
         try {
-            $result = $this->moderation->reissueCode($claim, request()->user());
+            $this->moderation->reissueCode($claim, request()->user());
         } catch (ValidationException $exception) {
             return back()->withErrors($exception->errors());
         }
 
-        return back()
-            ->with('status', 'Kode pengambilan baru diterbitkan.')
-            ->with('reissued_code', $result['plain']);
+        return back()->with(
+            'status',
+            'Kode pengambilan baru diterbitkan. Pemilik menerima tautan halaman kode melalui notifikasi.',
+        );
     }
 }

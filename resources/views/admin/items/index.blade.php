@@ -16,7 +16,7 @@
                 Belum Dititipkan ({{ $depositFollowUpCount }})
             </x-button>
             <x-button :href="route('admin.claims.index')" variant="secondary" size="sm" icon="hand-raised">Klaim</x-button>
-            <x-button :href="route('admin.audit.index')" variant="secondary" size="sm" icon="list">Audit Log</x-button>
+            <x-button :href="route('admin.audit.index')" variant="secondary" size="sm" icon="list">Log Aktivitas</x-button>
             <x-button :href="route('admin.categories.index')" variant="secondary" size="sm" icon="tag">Kategori</x-button>
             <x-button :href="route('admin.users.index')" variant="secondary" size="sm" icon="user">Pengguna</x-button>
         </x-page-header>
@@ -26,7 +26,7 @@
             <x-select name="only" label="Tampilkan" placeholder="Semua laporan" :selected="$filters['only'] ?? null" :options="['flagged' => 'Hanya yang ditandai', 'deposit_overdue' => 'Belum dikonfirmasi dititipkan']" />
             <div class="flex items-end gap-3">
                 <x-button type="submit" icon="search">Terapkan</x-button>
-                <x-button :href="route('admin.items.index')" variant="secondary">Reset</x-button>
+                <x-button :href="route('admin.items.index')" variant="secondary">Hapus filter</x-button>
             </div>
         </form>
 
@@ -38,11 +38,11 @@
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
                         <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
                             <tr>
-                                <th class="px-4 py-3">Barang</th>
-                                <th class="px-4 py-3">Pelapor</th>
-                                <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3">Ditandai</th>
-                                <th class="px-4 py-3"></th>
+                                <th scope="col" class="px-4 py-3">Barang</th>
+                                <th scope="col" class="px-4 py-3">Pelapor</th>
+                                <th scope="col" class="px-4 py-3">Status</th>
+                                <th scope="col" class="px-4 py-3">Ditandai</th>
+                                <th scope="col" class="px-4 py-3"><span class="sr-only">Tindakan</span></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -50,11 +50,11 @@
                                 <tr @class(['bg-amber-50/60' => $item->isFlagged(), 'bg-sky-50/60' => ! $item->isFlagged() && $item->isDepositOverdue()])>
                                     <td class="px-4 py-3">
                                         <p class="font-semibold text-slate-800">{{ $item->title }}</p>
-                                        <p class="font-mono text-xs text-slate-400">{{ $item->code }}</p>
+                                        <p class="font-mono text-xs text-slate-600">{{ $item->code }}</p>
                                     </td>
                                     <td class="px-4 py-3">
                                         <p class="text-slate-700">{{ $item->user?->name }}</p>
-                                        <p class="text-xs text-slate-400">{{ $item->user?->email }}</p>
+                                        <p class="text-xs text-slate-600">{{ $item->user?->email }}</p>
                                     </td>
                                     <td class="px-4 py-3">
                                         <x-status-badge :status="$item->status" />
@@ -72,7 +72,7 @@
                                                 {{ $item->flag_reason }}
                                             </span>
                                         @else
-                                            <span class="text-xs text-slate-400">&mdash;</span>
+                                            <span class="text-xs text-slate-600">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-right">

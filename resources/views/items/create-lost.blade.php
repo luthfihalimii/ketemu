@@ -76,43 +76,7 @@
                 :value="old('occurred_at', now()->format('Y-m-d\TH:i'))"
             />
 
-            <div class="border-t border-slate-200 pt-6">
-                <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
-                    <x-icon name="camera" class="h-5 w-5 text-brand-600" />
-                    Foto barang (jika tersedia)
-                </h2>
-                <p class="help mb-3">Format JPG, PNG, atau WEBP. Maksimal 5 MB.</p>
-                <input
-                    type="file"
-                    name="photo"
-                    accept="image/jpeg,image/png,image/webp"
-                    class="field file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
-                >
-                @error('photo')
-                    <p class="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-rose-600">
-                        <x-icon name="alert-triangle" class="h-4 w-4" /> {{ $message }}
-                    </p>
-                @enderror
-            </div>
-
-            <div class="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200 ring-inset">
-                <p class="flex items-center gap-2 text-sm font-semibold text-amber-900">
-                    <x-icon name="lock" class="h-4 w-4" />
-                    Ciri khusus barang
-                </p>
-                <p class="mt-1 text-sm text-amber-800">
-                    Sebutkan ciri yang hanya kamu ketahui. Informasi ini tidak ditampilkan kepada siapa pun.
-                </p>
-
-                <div class="mt-4">
-                    <x-input
-                        name="verification_answer"
-                        label="Ciri khusus"
-                        placeholder="Contoh: ada goresan inisial di bagian bawah"
-                        required
-                    />
-                </div>
-            </div>
+            <x-photo-upload />
 
             <div class="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row">
                 <x-button type="submit" size="lg" icon="check">Kirim Laporan</x-button>

@@ -33,7 +33,7 @@ class LostItemReportTest extends TestCase
 
         $response->assertRedirect(route('items.show', $item));
         $this->assertSame(ItemStatus::Reported, $item->status);
-        $this->assertTrue($item->verifyAnswer('ada goresan inisial a di bagian bawah'));
+        $this->assertNull($item->verification_answer);
     }
 
     #[Test]
@@ -71,7 +71,7 @@ class LostItemReportTest extends TestCase
     }
 
     #[Test]
-    public function the_lost_report_requires_a_description_and_ciri_khusus(): void
+    public function the_lost_report_requires_a_description(): void
     {
         $student = $this->student();
         ['category' => $category, 'location' => $location] = $this->locations();
@@ -81,11 +81,11 @@ class LostItemReportTest extends TestCase
             'title' => 'Helm',
             'location_id' => $location->id,
             'occurred_at' => now()->subDay()->toDateTimeString(),
-        ])->assertSessionHasErrors(['description', 'verification_answer']);
+        ])->assertSessionHasErrors(['description']);
     }
 
     #[Test]
-    public function the_ciri_khusus_is_stored_hashed(): void
+    public function unused_ciri_khusus_is_not_stored(): void
     {
         $student = $this->student();
         ['category' => $category, 'location' => $location] = $this->locations();
@@ -101,6 +101,6 @@ class LostItemReportTest extends TestCase
 
         $raw = Item::query()->latest('id')->firstOrFail()->getRawOriginal('verification_answer');
 
-        $this->assertStringNotContainsString('bola basket', $raw);
+        $this->assertNull($raw);
     }
 }

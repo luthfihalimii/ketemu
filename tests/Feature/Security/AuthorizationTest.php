@@ -25,12 +25,13 @@ class AuthorizationTest extends TestCase
         $claim = $item->claims()->where('user_id', $claimant->id)->firstOrFail();
 
         $this->actingAs($attacker)
+            ->withConfirmedPassword()
             ->get(route('claims.pickup', $claim))
             ->assertForbidden();
     }
 
     #[Test]
-    public function the_reporter_can_see_the_claim_on_their_item_but_not_its_secrets(): void
+    public function the_reporter_cannot_view_the_claimants_pickup_code(): void
     {
         $reporter = $this->student();
         $item = $this->storedItem([], $reporter);
@@ -40,9 +41,9 @@ class AuthorizationTest extends TestCase
         $claim = $item->claims()->where('user_id', $claimant->id)->firstOrFail();
 
         $this->actingAs($reporter)
+            ->withConfirmedPassword()
             ->get(route('claims.pickup', $claim))
-            ->assertOk()
-            ->assertDontSee($claimant->email);
+            ->assertForbidden();
     }
 
     #[Test]
@@ -70,14 +71,17 @@ class AuthorizationTest extends TestCase
     }
 
     #[Test]
-    public function an_admin_can_view_a_pending_item_and_its_claim(): void
+    public function an_admin_can_view_a_pending_item_but_not_another_users_pickup_code(): void
     {
         $admin = User::factory()->admin()->create();
         $item = $this->storedItem(['status' => ItemStatus::Reported]);
         $claim = Claim::factory()->create(['item_id' => $item->id]);
 
         $this->actingAs($admin)->get(route('items.show', $item))->assertOk();
-        $this->actingAs($admin)->get(route('claims.pickup', $claim))->assertOk();
+        $this->actingAs($admin)
+            ->withConfirmedPassword()
+            ->get(route('claims.pickup', $claim))
+            ->assertForbidden();
     }
 
     #[Test]

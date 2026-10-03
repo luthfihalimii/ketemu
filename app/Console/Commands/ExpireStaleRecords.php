@@ -2,13 +2,17 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ClaimStatus;
 use App\Enums\ItemStatus;
 use App\Enums\PickupCodeStatus;
+use App\Models\Claim;
 use App\Models\Item;
 use App\Models\PickupCode;
 use App\Models\User;
 use App\Notifications\ActivityNotification;
 use App\Services\AuditLogger;
+use App\Services\ClaimVerificationService;
+use App\Services\ItemPhotoService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
 
@@ -16,17 +20,59 @@ class ExpireStaleRecords extends Command
 {
     protected $signature = 'ketemupens:expire';
 
-    protected $description = 'Kedaluwarsakan kode pengambilan, barang temuan yang lama tidak diambil, dan tandai penitipan yang belum dikonfirmasi.';
+    public function __construct(private readonly ItemPhotoService $photos)
+    {
+        parent::__construct();
+    }
 
-    public function handle(AuditLogger $audit): int
+    protected $description = 'Kedaluwarsakan kode pengambilan, lepaskan klaim yang melewati masa tenggang, kedaluwarsakan barang temuan lama, dan tandai penitipan yang belum dikonfirmasi.';
+
+    public function handle(AuditLogger $audit, ClaimVerificationService $claims): int
     {
         $codes = $this->expirePickupCodes();
+        $released = $this->releaseExpiredClaims($claims);
         $items = $this->expireStaleItems($audit);
         $reminders = $this->flagDepositFollowUps($audit);
 
-        $this->info("Kode pengambilan kedaluwarsa: {$codes}. Barang kedaluwarsa: {$items}. Perlu tindak lanjut penitipan: {$reminders}.");
+        $this->info("Kode pengambilan kedaluwarsa: {$codes}. Klaim dilepas: {$released}. Barang kedaluwarsa: {$items}. Perlu tindak lanjut penitipan: {$reminders}.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Lepaskan klaim tersetujui yang pemiliknya tidak pernah mengambil barang.
+     *
+     * Setelah kode kedaluwarsa, pemilik diberi masa tenggang
+     * (pickup_code.release_grace_days) untuk meminta kode baru lewat admin;
+     * lewat itu, klaim dibatalkan dan barang kembali ke status STORED.
+     */
+    private function releaseExpiredClaims(ClaimVerificationService $claims): int
+    {
+        $cutoff = now()->subDays((int) config('ketemupens.pickup_code.release_grace_days'));
+
+        $stale = Claim::query()
+            ->where('status', ClaimStatus::Approved->value)
+            ->whereHas('pickupCode', function ($query) use ($cutoff) {
+                $query->where('status', PickupCodeStatus::Expired->value)
+                    ->where('expires_at', '<=', $cutoff);
+            })
+            ->with(['item', 'user'])
+            ->get();
+
+        foreach ($stale as $claim) {
+            $claims->release($claim);
+
+            $claim->user?->notify(new ActivityNotification(
+                event: ActivityNotification::CLAIM_AUTO_RELEASED,
+                title: 'Kode pengambilan kedaluwarsa',
+                body: 'Kode pengambilan untuk "'.($claim->item->title ?? 'barang').'" kedaluwarsa dan klaimmu dilepas agar barang kembali tersedia. Kalau barang itu milikmu, ajukan klaim ulang atau hubungi admin untuk kode baru.',
+                item: $claim->item,
+                url: route('dashboard.claims'),
+                level: 'warning',
+            ));
+        }
+
+        return $stale->count();
     }
 
     /**
@@ -83,7 +129,7 @@ class ExpireStaleRecords extends Command
                 Notification::send($admins, new ActivityNotification(
                     event: ActivityNotification::ADMIN_DEPOSIT_UNCONFIRMED,
                     title: 'Barang temuan belum dikonfirmasi dititipkan',
-                    body: '"'.$item->title.'" dilaporkan '.$item->created_at?->diffInDays(now()).' hari lalu oleh '.($item->user?->name ?? 'pengguna').' tapi penitipan ke satpam belum dikonfirmasi.',
+                    body: '"'.$item->title.'" dilaporkan '.$item->created_at?->diffInDays(now()).' hari lalu oleh '.($item->user->name ?? 'pengguna').' tapi penitipan ke satpam belum dikonfirmasi.',
                     item: $item,
                     url: route('admin.items.show', $item),
                     level: 'warning',
@@ -121,6 +167,13 @@ class ExpireStaleRecords extends Command
 
             $item->setStatus(ItemStatus::Expired);
             $item->expires_at = now();
+
+            // Barang keluar dari katalog: foto ikut dibersihkan.
+            if ($item->photo_path !== null) {
+                $this->photos->delete($item->photo_path);
+                $item->photo_path = null;
+            }
+
             $item->save();
 
             // No admin is present, so the entry is attributed to the system.

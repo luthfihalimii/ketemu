@@ -80,7 +80,7 @@ class ItemVerificationTest extends TestCase
         $b = Item::factory()->create();
 
         $this->assertStringStartsWith('KP-', $a->code);
-        $this->assertSame(11, strlen($a->code));
+        $this->assertSame(39, strlen($a->code));
         $this->assertNotSame($a->code, $b->code);
     }
 

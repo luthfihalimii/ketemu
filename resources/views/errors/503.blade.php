@@ -1,16 +1,9 @@
 @extends('layouts.guest')
-
-@section('title', 'Sedang dalam perbaikan')
-
+@section('title', 'Layanan sedang perawatan')
 @section('content')
-    <div class="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-20 text-center sm:px-6">
-        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-            <x-icon name="shield" class="h-8 w-8" />
-        </span>
-
-        <h1 class="mt-6 text-2xl font-bold tracking-tight text-slate-900">KETEMU PENS sedang dalam perbaikan</h1>
-        <p class="mt-2 text-sm text-slate-600">
-            Kami sedang melakukan pemeliharaan singkat. Silakan coba beberapa saat lagi.
-        </p>
+    <div class="mx-auto max-w-lg px-4 py-20 text-center">
+        <h1 class="text-2xl font-bold text-slate-900">Layanan sedang perawatan</h1>
+        <p class="mt-3 text-slate-600">KETEMU PENS sedang diperbarui. Silakan kembali beberapa saat lagi. Barang fisik tetap aman di pos satpam.</p>
+        <x-button :href="route('home')" class="mt-6">Muat ulang</x-button>
     </div>
 @endsection

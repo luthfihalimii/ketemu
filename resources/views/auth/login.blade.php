@@ -41,6 +41,7 @@
             </label>
 
             <x-button type="submit" size="lg" icon="lock" block>Masuk</x-button>
+            <a href="{{ route('password.request') }}" class="text-sm text-brand-700 hover:underline">Lupa password?</a>
         </form>
 
         <p class="mt-6 text-center text-sm text-slate-600">

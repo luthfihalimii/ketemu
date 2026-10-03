@@ -1,0 +1,22 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app/
+        - config/
+        - database/
+        - routes/
+        - tests/
+    checkModelProperties: true
+    checkPhpDocMissingReturn: false
+    # Model-model proyek ini mendeklarasikan cast lewat method casts()
+    # (bukan properti $casts); tanpa ini Larastan membaca kolom enum/datetime
+    # sebagai string.
+    parseModelCastsMethod: true
+    # Factory hanya perlu mengembalikan array; docblock generik
+    # "array<model property of X, mixed>" dari parent tidak relevan.
+    ignoreErrors:
+        - identifier: method.childReturnType
+          path: database/factories/*

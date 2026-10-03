@@ -10,7 +10,7 @@
             icon="search"
         />
 
-        <form method="GET" action="{{ route('items.index') }}" class="card mb-8 p-5">
+        <form method="GET" action="{{ route('items.index') }}" role="search" aria-label="Pencarian barang" class="card mb-8 p-5">
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div class="lg:col-span-2">
                     <x-input
@@ -55,7 +55,7 @@
                 <div class="flex items-end gap-3 md:col-span-2 lg:col-span-2">
                     <x-button type="submit" icon="search">Terapkan filter</x-button>
                     @if (collect($filters)->filter()->isNotEmpty())
-                        <x-button :href="route('items.index')" variant="secondary">Reset</x-button>
+                        <x-button :href="route('items.index')" variant="secondary">Hapus filter</x-button>
                     @endif
                 </div>
             </div>

@@ -9,17 +9,25 @@
             description="Nonaktifkan kategori agar tidak lagi muncul pada formulir laporan."
             icon="tag"
         >
+            <x-button :href="route('admin.dashboard')" variant="secondary" size="sm" icon="layout-dashboard">Dasbor</x-button>
             <x-button :href="route('admin.items.index')" variant="secondary" size="sm" icon="shield">Moderasi</x-button>
         </x-page-header>
 
-        <div class="card overflow-hidden">
+        <form method="POST" action="{{ route('admin.categories.store') }}" class="card mb-6 grid gap-4 p-5 sm:grid-cols-4">
+            @csrf
+            <x-input name="name" label="Nama kategori" required placeholder="Contoh: Dompet" class="sm:col-span-2" />
+            <x-input name="icon" label="Ikon (opsional)" placeholder="Contoh: wallet" />
+            <div class="flex items-end"><x-button type="submit" icon="plus">Tambah</x-button></div>
+        </form>
+
+        <div class="card overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     <tr>
-                        <th class="px-4 py-3">Kategori</th>
-                        <th class="px-4 py-3">Jumlah laporan</th>
-                        <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3"></th>
+                        <th scope="col" class="px-4 py-3">Kategori</th>
+                        <th scope="col" class="px-4 py-3">Jumlah laporan</th>
+                        <th scope="col" class="px-4 py-3">Status</th>
+                        <th scope="col" class="px-4 py-3"><span class="sr-only">Tindakan</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -35,7 +43,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <form method="POST" action="{{ route('admin.categories.toggle', $category) }}">
+                                <form method="POST" action="{{ route('admin.categories.toggle', $category) }}" data-confirm="Ubah status kategori {{ $category->name }}? Kategori nonaktif tidak tersedia untuk laporan baru.">
                                     @csrf
                                     <x-button type="submit" variant="secondary" size="sm">
                                         {{ $category->is_active ? 'Nonaktifkan' : 'Aktifkan' }}

@@ -22,11 +22,27 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Ensure .env is not tracked in git
+        run: |
+          if git ls-files --error-unmatch .env > /dev/null 2>&1; then
+            echo "::error::.env must never be committed to git."
+            exit 1
+          fi
+
       - name: Copy environment file
         run: cp .env.example .env
 
       - name: Generate application key
         run: php artisan key:generate
+
+      - name: Check code style (Pint)
+        run: ./vendor/bin/pint --test
+
+      - name: Static analysis (PHPStan)
+        run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Frontend interaction tests (node:test, tanpa deps tambahan)
+        run: npm run test
 
       - name: Run test suite
         run: php artisan test

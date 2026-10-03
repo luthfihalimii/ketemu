@@ -31,12 +31,44 @@ class NotificationController extends Controller
 
         $record->markAsRead();
 
-        return redirect($record->data['url'] ?? route('dashboard'));
+        $url = $record->data['url'] ?? null;
+
+        if (! $this->isSafeUrl($url)) {
+            return redirect()->route('dashboard');
+        }
+
+        return redirect($url);
+    }
+
+    /**
+     * Open-redirect guard: only allow relative paths (not protocol-relative
+     * "//host") or absolute URLs on the application's own host. Anything else
+     * falls back to the dashboard.
+     */
+    private function isSafeUrl(mixed $url): bool
+    {
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        if (str_starts_with($url, '//')) {
+            return false;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return true;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($host)
+            && $host !== ''
+            && $host === parse_url((string) config('app.url'), PHP_URL_HOST);
     }
 
     public function markAllRead(Request $request): RedirectResponse
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return back()->with('status', 'Semua notifikasi ditandai sudah dibaca.');
     }

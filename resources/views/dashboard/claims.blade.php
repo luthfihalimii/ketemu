@@ -24,16 +24,8 @@
                     <div class="card p-5">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
                             <div class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                                @if ($claim->item?->photo_path)
-                                    <img
-                                        src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($claim->item->photo_path) }}"
-                                        alt="Foto {{ $claim->item->title }}"
-                                        class="h-full w-full object-cover"
-                                    >
-                                @else
-                                    <div class="flex h-full w-full items-center justify-center text-slate-300">
-                                        <x-icon name="package" class="h-7 w-7" />
-                                    </div>
+                                @if ($claim->item)
+                                    <x-item-photo :item="$claim->item" />
                                 @endif
                             </div>
 
@@ -70,7 +62,7 @@
                                     </x-button>
                                 @endif
 
-                                @if ($claim->item && $claim->status === \App\Enums\ClaimStatus::Submitted && $claim->attempt_count < $maxAttempts)
+                                @if ($claim->item && in_array($claim->status, [\App\Enums\ClaimStatus::Submitted, \App\Enums\ClaimStatus::Cancelled], true) && $claim->item->status->acceptsClaims() && $claim->attempt_count < $maxAttempts)
                                     <x-button :href="route('claims.create', $claim->item)" variant="secondary" size="sm" icon="hand-raised">
                                         Coba lagi
                                     </x-button>

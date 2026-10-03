@@ -28,24 +28,42 @@ class DashboardController extends Controller
             ->where('user_id', $user->id)
             ->with('category:id,name')
             ->latest()
+            ->limit(5)
             ->get();
 
         $myClaims = $user->claims()
             ->with(['item.category:id,name', 'item.location:id,name', 'pickupCode'])
             ->latest()
+            ->limit(5)
             ->get();
+
+        // Aggregasi statistik dihitung di database agar dasbor tidak memuat
+        // seluruh riwayat laporan/klaim hanya untuk menghitung angka.
+        /** @var object{reports: int|string|null, awaiting_deposit: int|string|null, available: int|string|null} $reportStats */
+        $reportStats = Item::query()
+            ->where('user_id', $user->id)
+            ->selectRaw('count(*) as reports')
+            ->selectRaw('sum(status = ?) as awaiting_deposit', [ItemStatus::WaitingDeposit->value])
+            ->selectRaw('sum(status = ?) as available', [ItemStatus::Stored->value])
+            ->toBase()
+            ->firstOrFail();
+
+        $claimCount = $user->claims()->count();
+        $readyForPickup = $user->claims()
+            ->whereHas('item', fn ($query) => $query->where('status', ItemStatus::ReadyForPickup->value))
+            ->count();
 
         return view('dashboard.index', [
             'user' => $user,
             'stats' => [
-                'reports' => $myReports->count(),
-                'awaiting_deposit' => $myReports->where('status', ItemStatus::WaitingDeposit)->count(),
-                'available' => $myReports->where('status', ItemStatus::Stored)->count(),
-                'claims' => $myClaims->count(),
-                'ready_for_pickup' => $myClaims->filter(fn ($claim) => $claim->item?->status === ItemStatus::ReadyForPickup)->count(),
+                'reports' => (int) $reportStats->reports,
+                'awaiting_deposit' => (int) $reportStats->awaiting_deposit,
+                'available' => (int) $reportStats->available,
+                'claims' => $claimCount,
+                'ready_for_pickup' => $readyForPickup,
             ],
-            'myReports' => $myReports->take(5),
-            'myClaims' => $myClaims->take(5),
+            'myReports' => $myReports,
+            'myClaims' => $myClaims,
         ]);
     }
 
@@ -93,6 +111,7 @@ class DashboardController extends Controller
         ]);
 
         $found = Item::query()->findOrFail($validated['found_item_id']);
+        Gate::authorize('view', $found);
 
         try {
             $this->items->matchLostToFound($item, $found, $request->user());

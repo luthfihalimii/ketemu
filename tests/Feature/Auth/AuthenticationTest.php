@@ -23,7 +23,7 @@ class AuthenticationTest extends TestCase
             'password_confirmation' => 'rahasia123',
         ]);
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('verification.notice'));
 
         $user = User::query()->where('email', 'budi@student.pens.ac.id')->firstOrFail();
 

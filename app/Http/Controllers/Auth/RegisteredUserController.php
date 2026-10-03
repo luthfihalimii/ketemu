@@ -25,7 +25,6 @@ class RegisteredUserController extends Controller
             'name' => $request->validated('name'),
             'email' => $request->validated('email'),
             'password' => $request->validated('password'),
-            'role' => Role::Student,
         ]);
 
         Auth::login($user);
@@ -34,6 +33,9 @@ class RegisteredUserController extends Controller
 
         $audit->log('auth.registered', 'Akun mahasiswa baru terdaftar.', $user);
 
-        return redirect()->route('dashboard')->with('status', 'Akun berhasil dibuat. Selamat datang di KETEMU PENS!');
+        $user->sendEmailVerificationNotification();
+
+        return redirect()->route('verification.notice')
+            ->with('status', 'Akun berhasil dibuat. Periksa email kampusmu untuk tautan verifikasi.');
     }
 }

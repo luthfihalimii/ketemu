@@ -12,6 +12,9 @@
 /.phpunit.cache
 /.vscode
 /.zed
+/.kilo/
+/.grok/logs/
+/.pi/logs/
 /auth.json
 /node_modules
 /public/build

@@ -51,7 +51,7 @@
                 <div class="border-t border-slate-200 pt-5">
                     <p class="text-xs font-medium text-slate-500">Atau buka tautan ini secara manual:</p>
                     <code class="mt-1.5 block overflow-x-auto rounded-lg bg-slate-100 p-3 font-mono text-xs text-slate-700">{{ $linkUrl }}</code>
-                    <p class="mt-2 text-xs text-slate-400">
+                    <p class="mt-2 text-xs text-slate-600">
                         Tautan hanya berlaku {{ \App\Services\TelegramService::TOKEN_TTL_MINUTES }} menit dan hanya bisa dipakai sekali.
                         Buka ulang halaman ini untuk mendapat tautan baru.
                     </p>

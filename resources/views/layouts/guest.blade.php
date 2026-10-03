@@ -13,8 +13,12 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <meta name="description" content="@yield('meta_description', 'Akun KETEMU PENS — platform Lost & Found kampus PENS.')">
+    <meta name="robots" content="noindex, nofollow">
+    @stack('head')
 </head>
 <body class="flex min-h-full flex-col bg-slate-50">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white">Lompat ke konten utama</a>
     <x-flash />
 
     <header class="border-b border-slate-200 bg-white">

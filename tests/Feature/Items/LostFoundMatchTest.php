@@ -201,7 +201,7 @@ class LostFoundMatchTest extends TestCase
         $owner = $this->student();
         $lost = $this->lostReport($owner);
         $found = $this->storedItem();
-        $claimant = $this->student();
+        $claimant = $owner;
 
         $lost->matchTo($found);
 

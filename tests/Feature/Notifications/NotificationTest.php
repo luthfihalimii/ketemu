@@ -122,7 +122,7 @@ class NotificationTest extends TestCase
         $found = $this->storedItem();
         $lost->matchTo($found);
 
-        $code = $this->verifyClaim($found, $this->student());
+        $code = $this->verifyClaim($found, $lostOwner);
         $this->redeem($code, User::factory()->guard()->create())->assertRedirect();
 
         $lostOwner->refresh();
@@ -157,6 +157,44 @@ class NotificationTest extends TestCase
         $this->actingAs($this->student())
             ->get(route('notifications.show', $foreign->id))
             ->assertNotFound();
+    }
+
+    #[Test]
+    public function a_notification_with_an_external_url_redirects_to_the_dashboard_instead(): void
+    {
+        $user = $this->student();
+
+        $user->notify(new ActivityNotification(
+            event: 'test.open_redirect',
+            title: 'Uji redirect',
+            body: 'Notifikasi dengan URL jahat.',
+            url: 'https://evil.com/phishing',
+        ));
+
+        $notification = $user->notifications()->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('notifications.show', $notification->id))
+            ->assertRedirect(route('dashboard'));
+    }
+
+    #[Test]
+    public function a_notification_with_a_protocol_relative_url_is_also_blocked(): void
+    {
+        $user = $this->student();
+
+        $user->notify(new ActivityNotification(
+            event: 'test.open_redirect',
+            title: 'Uji redirect',
+            body: 'Notifikasi dengan URL protokol-relatif.',
+            url: '//evil.com/phishing',
+        ));
+
+        $notification = $user->notifications()->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('notifications.show', $notification->id))
+            ->assertRedirect(route('dashboard'));
     }
 
     #[Test]

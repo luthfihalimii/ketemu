@@ -72,6 +72,15 @@ trait BuildsItemFlow
     }
 
     /**
+     * Simulate a session that has passed the password.confirm middleware
+     * protecting the pickup-code page.
+     */
+    protected function withConfirmedPassword(string $password = 'password'): static
+    {
+        return $this->withSession(['auth.password_confirmed_at' => time()]);
+    }
+
+    /**
      * Redeem a pickup code as a guard, always recording recipient identity.
      *
      * The identity fields are what a real handover requires, so tests go

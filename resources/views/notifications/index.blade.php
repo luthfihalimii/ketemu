@@ -71,7 +71,7 @@
 
                             <p class="mt-1 text-sm text-slate-600">{{ $data['body'] ?? '' }}</p>
 
-                            <p class="mt-1.5 text-xs text-slate-400">
+                            <p class="mt-1.5 text-xs text-slate-600">
                                 {{ $notification->created_at->translatedFormat('d F Y, H:i') }}
                             </p>
                         </div>

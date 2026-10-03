@@ -22,7 +22,7 @@
 
         <div class="card overflow-hidden">
             <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-                <h1 class="text-lg font-bold text-slate-900">Pickup Barang</h1>
+                <h1 class="text-lg font-bold text-slate-900">Pengambilan Barang</h1>
                 <p class="text-sm text-slate-500">Tunjukkan kode ini kepada petugas keamanan.</p>
             </div>
 
@@ -30,9 +30,17 @@
                 @if ($pickupCode)
                     <div class="text-center">
                         <p class="text-sm font-semibold tracking-wide text-slate-500 uppercase">Kode Pengambilan</p>
-                        <p class="mt-2 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50 px-6 py-6 font-mono text-3xl font-bold tracking-[0.3em] text-brand-800 sm:text-4xl">
+                        @if (! empty($qrUri) && $status === \App\Enums\PickupCodeStatus::Active)
+                            <img src="{{ $qrUri }}" alt="QR kode pengambilan {{ $item->title }}" width="240" height="240" class="mx-auto mt-4 h-48 w-48 rounded-xl bg-white p-2 ring-1 ring-slate-200" loading="eager" decoding="async">
+                            <p class="mt-2 text-xs text-slate-500">Satpam scan QR ini — tidak perlu mengetik. Jangan kirim screenshot ke orang lain.</p>
+                        @endif
+                        <p id="pickup-code" class="mt-2 select-all rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50 px-3 py-6 font-mono text-2xl font-bold tracking-widest text-brand-800 sm:text-4xl">
                             {{ $pickupCode->plainCode() ?? str_repeat('•', 9) }}
                         </p>
+                        @if ($status === \App\Enums\PickupCodeStatus::Active)
+                            <button type="button" data-copy-code="pickup-code" class="hidden mt-3 rounded-lg border border-brand-300 px-4 py-2 text-sm font-semibold text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500">Salin kode</button>
+                            <p id="copy-code-status" role="status" class="mt-2 text-sm text-slate-600"></p>
+                        @endif
 
                         <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
                             <x-pickup-code-status-badge :status="$status" />

@@ -16,12 +16,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Hidden(['verification_answer'])]
+#[Hidden(['verification_answer', 'private_note'])]
 #[Fillable([
     'user_id',
     'category_id',
     'title',
     'description',
+    'private_note',
     'location_id',
     'location_detail',
     'occurred_at',
@@ -32,14 +33,11 @@ use Illuminate\Support\Str;
     'deposit_note',
     'matched_item_id',
     'deposit_reminded_at',
-    'status',
+    'deposit_requested_at',
+    'deposit_confirmed_at',
+    'deposit_confirmed_by',
     'verification_question',
     'verification_answer',
-    'flagged_at',
-    'flag_reason',
-    'moderation_note',
-    'moderated_by',
-    'moderated_at',
 ])]
 class Item extends Model
 {
@@ -57,7 +55,8 @@ class Item extends Model
             'flagged_at' => 'datetime',
             'moderated_at' => 'datetime',
             'deposit_reminded_at' => 'datetime',
-            'claim_attempts' => 'integer',
+            'deposit_requested_at' => 'datetime',
+            'deposit_confirmed_at' => 'datetime',
             // Hashing the answer means a leaked database never reveals the secret.
             'verification_answer' => 'hashed',
         ];
@@ -72,11 +71,16 @@ class Item extends Model
 
     public static function generateCode(): string
     {
-        do {
-            $code = 'KP-'.Str::upper(Str::random(8));
-        } while (self::query()->where('code', $code)->exists());
+        return 'KP-'.Str::upper((string) Str::uuid());
+    }
 
-        return $code;
+    /**
+     * Gunakan kode laporan (KP-UUID) untuk route model binding agar URL
+     * detail tidak bisa di-enumerasi berurutan (/items/1, /items/2, ...).
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'code';
     }
 
     /** @return BelongsTo<User, $this> */
@@ -139,6 +143,17 @@ class Item extends Model
     public function moderator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function depositConfirmer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deposit_confirmed_by');
+    }
+
+    public function isDepositConfirmed(): bool
+    {
+        return $this->deposit_confirmed_at !== null;
     }
 
     #[Scope]

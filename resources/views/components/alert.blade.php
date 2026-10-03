@@ -28,8 +28,8 @@
     @if ($dismissible)
         <button
             type="button"
-            onclick="this.closest('[data-flash]').remove()"
-            class="rounded-lg p-1 transition hover:bg-black/5"
+            data-dismiss
+            class="hidden rounded-lg p-1 transition hover:bg-black/5"
             aria-label="Tutup pemberitahuan"
         >
             <x-icon name="x" class="h-4 w-4" />

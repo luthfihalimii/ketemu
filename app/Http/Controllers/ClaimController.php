@@ -7,6 +7,7 @@ use App\Http\Requests\Claims\SubmitClaimRequest;
 use App\Models\Claim;
 use App\Models\Item;
 use App\Services\ClaimVerificationService;
+use App\Services\PickupQrService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -33,7 +34,7 @@ class ClaimController extends Controller
         return view('claims.create', [
             'item' => $item->load(['category:id,name', 'location:id,name', 'depositLocation:id,name']),
             'claim' => $existing,
-            'remainingAttempts' => ClaimVerificationService::MAX_ATTEMPTS - ($existing?->attempt_count ?? 0),
+            'remainingAttempts' => ClaimVerificationService::MAX_ATTEMPTS - ($existing->attempt_count ?? 0),
             'maxAttempts' => ClaimVerificationService::MAX_ATTEMPTS,
         ]);
     }
@@ -71,19 +72,28 @@ class ClaimController extends Controller
     }
 
     /**
-     * Owner's pickup page with the single-use code.
+     * Owner's pickup page with the single-use code + QR.
      */
-    public function pickup(Claim $claim): View
+    public function pickup(Claim $claim, PickupQrService $qr): View
     {
-        // Load before authorizing so the policy can read the related item.
-        $claim->load(['item.category:id,name', 'item.location:id,name', 'item.depositLocation:id,name', 'pickupCode']);
+        Gate::authorize('viewPickupCode', $claim);
 
-        Gate::authorize('view', $claim);
+        $claim->load(['item.category:id,name', 'item.location:id,name', 'item.depositLocation:id,name', 'pickupCode']);
+        if ($claim->pickupCode !== null) {
+            Gate::authorize('view', $claim->pickupCode);
+        }
+
+        $qrUri = null;
+        $plain = $claim->pickupCode?->plainCode();
+        if ($plain && $claim->pickupCode->isUsable()) {
+            $qrUri = $qr->svgDataUri($plain);
+        }
 
         return view('claims.pickup', [
             'claim' => $claim,
             'item' => $claim->item,
             'pickupCode' => $claim->pickupCode,
+            'qrUri' => $qrUri,
         ]);
     }
 }

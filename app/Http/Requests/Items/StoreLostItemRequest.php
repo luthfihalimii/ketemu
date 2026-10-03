@@ -27,7 +27,6 @@ class StoreLostItemRequest extends FormRequest
             'location_id' => ['required', Rule::exists('locations', 'id')->where('is_active', true)],
             'location_detail' => ['nullable', 'string', 'max:120'],
             'occurred_at' => ['required', 'date', 'before_or_equal:now'],
-            'verification_answer' => ['required', 'string', 'min:5', 'max:150'],
             'photo' => [
                 'nullable',
                 'file',
@@ -35,6 +34,7 @@ class StoreLostItemRequest extends FormRequest
                 'mimes:jpg,jpeg,png,webp',
                 'mimetypes:'.implode(',', ItemPhotoService::ALLOWED_MIMES),
                 'max:'.ItemPhotoService::MAX_KILOBYTES,
+                'dimensions:max_width=4000,max_height=4000',
             ],
         ];
     }
@@ -52,7 +52,7 @@ class StoreLostItemRequest extends FormRequest
             'location_id.required' => 'Perkiraan lokasi kehilangan wajib dipilih.',
             'occurred_at.required' => 'Perkiraan waktu kehilangan wajib diisi.',
             'occurred_at.before_or_equal' => 'Waktu kehilangan tidak boleh di masa depan.',
-            'verification_answer.required' => 'Ciri khusus barang wajib diisi.',
+            'photo.dimensions' => 'Dimensi foto maksimal 4000 × 4000 piksel.',
             'photo.mimes' => 'Foto harus berformat JPG, PNG, atau WEBP.',
             'photo.max' => 'Ukuran foto maksimal 5 MB.',
         ];

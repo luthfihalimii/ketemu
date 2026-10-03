@@ -59,12 +59,12 @@ class MakeStaffCommand extends Command
             'name' => (string) ($this->option('name') ?: $this->nameFromEmail($email)),
             'email' => $email,
             'password' => $password,
-            'role' => $role,
         ]);
 
         // email_verified_at is deliberately not mass-assignable, so it is set
         // directly. Staff accounts are provisioned by an operator, never
         // self-registered, so there is no mailbox to verify against.
+        $user->role = $role;
         $user->email_verified_at = now();
         $user->save();
 

@@ -9,8 +9,11 @@ use App\Models\Item;
 use App\Services\ModerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ItemModerationController extends Controller
 {
@@ -50,6 +53,7 @@ class ItemModerationController extends Controller
 
     public function show(Item $item): View
     {
+        Gate::authorize('moderate', $item);
         $item->load([
             'category:id,name',
             'location:id,name',
@@ -71,13 +75,23 @@ class ItemModerationController extends Controller
 
     public function flag(ModerateItemRequest $request, Item $item): RedirectResponse
     {
+        Gate::authorize('moderate', $item);
         $this->moderation->flag($item, $request->validated('reason'), $request->user());
 
         return back()->with('status', 'Laporan ditandai mencurigakan.');
     }
 
+    public function photo(Item $item): StreamedResponse
+    {
+        Gate::authorize('moderate', $item);
+        abort_unless($item->archived_photo_path !== null, 404);
+
+        return Storage::disk('local')->response('moderation/'.$item->archived_photo_path, headers: ['Cache-Control' => 'private, no-store']);
+    }
+
     public function unflag(Item $item): RedirectResponse
     {
+        Gate::authorize('moderate', $item);
         $this->moderation->unflag($item, request()->user());
 
         return back()->with('status', 'Tanda mencurigakan pada laporan dihapus.');
@@ -85,6 +99,7 @@ class ItemModerationController extends Controller
 
     public function reject(ModerateItemRequest $request, Item $item): RedirectResponse
     {
+        Gate::authorize('moderate', $item);
         try {
             $this->moderation->reject($item, $request->validated('reason'), $request->user());
         } catch (ValidationException $exception) {
@@ -96,6 +111,7 @@ class ItemModerationController extends Controller
 
     public function restore(Item $item): RedirectResponse
     {
+        Gate::authorize('moderate', $item);
         try {
             $this->moderation->restore($item, request()->user());
         } catch (ValidationException $exception) {
@@ -107,6 +123,7 @@ class ItemModerationController extends Controller
 
     public function expire(Item $item): RedirectResponse
     {
+        Gate::authorize('moderate', $item);
         try {
             $this->moderation->expire($item, request()->user());
         } catch (ValidationException $exception) {
@@ -114,5 +131,49 @@ class ItemModerationController extends Controller
         }
 
         return back()->with('status', 'Laporan dikedaluwarsakan dan hilang dari pencarian publik.');
+    }
+
+    /**
+     * Export laporan tersaring ke CSV untuk rekap pos/admin.
+     * Tidak pernah menyertakan jawaban verifikasi / PII penerima.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $filters = $request->validate([
+            'status' => ['nullable', 'string'],
+            'only' => ['nullable', 'in:flagged,deposit_overdue'],
+        ]);
+
+        $items = Item::query()
+            ->with(['category:id,name', 'location:id,name', 'depositLocation:id,name', 'user:id,name,email'])
+            ->when(($filters['only'] ?? null) === 'flagged', fn ($query) => $query->flagged())
+            ->when(($filters['only'] ?? null) === 'deposit_overdue', fn ($query) => $query->depositOverdue())
+            ->when(
+                filled($filters['status'] ?? null) && ItemStatus::tryFrom($filters['status']) !== null,
+                fn ($query) => $query->where('status', $filters['status']),
+            )
+            ->orderByDesc('created_at')
+            ->limit(5000)
+            ->get();
+
+        $filename = 'ketemupens-laporan-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($items): void {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['kode', 'judul', 'status', 'kategori', 'lokasi', 'penitipan', 'pelapor', 'dibuat']);
+            foreach ($items as $item) {
+                fputcsv($out, [
+                    $item->code,
+                    $item->title,
+                    $item->status->value,
+                    $item->category?->name,
+                    $item->location?->name,
+                    $item->depositLocation?->name,
+                    $item->user?->email,
+                    $item->created_at?->toDateTimeString(),
+                ]);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 }

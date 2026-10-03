@@ -12,6 +12,7 @@
 
     <title>@yield('title', 'KETEMU PENS') — Kembali Temukan Barangmu di PENS</title>
     <meta name="description" content="@yield('meta_description', 'Platform Lost & Found Politeknik Elektronika Negeri Surabaya. Cari barang hilang atau laporkan barang temuan.')">
+    @yield('meta_extra')
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 
@@ -27,6 +28,15 @@
 
     <x-flash />
 
+    @if (app()->isProduction() && in_array((string) config('mail.default'), ['log', 'array'], true) && auth()->check() && auth()->user()->isAdmin())
+        <div class="border-b border-amber-200 bg-amber-50">
+            <p class="mx-auto w-full max-w-7xl px-4 py-2 text-sm text-amber-900 sm:px-6 lg:px-8">
+                Email belum aktif (MAIL_MAILER=log): verifikasi email tidak akan sampai ke mahasiswa. Arahkan ke SMTP lalu uji dengan
+                <code class="font-mono">php artisan ketemupens:test-mail admin@pens.ac.id</code>.
+            </p>
+        </div>
+    @endif
+
     <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div class="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
             <a href="{{ route('home') }}" class="flex items-center gap-2.5 rounded-lg focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
@@ -39,7 +49,7 @@
                 </span>
             </a>
 
-            <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
+            <nav class="ml-auto hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
                 <x-nav-link :href="route('home')" :active="request()->routeIs('home')" icon="home">Beranda</x-nav-link>
                 <x-nav-link :href="route('items.index')" :active="request()->routeIs('items.index')" icon="search">Cari Barang</x-nav-link>
 
@@ -90,8 +100,8 @@
                 @endauth
             </nav>
 
-            <details class="group ml-auto md:hidden">
-                <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 marker:hidden">
+            <details class="group ml-auto lg:hidden" aria-label="Navigasi mobile">
+                <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 marker:hidden focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none">
                     <x-icon name="menu" class="h-5 w-5" />
                     Menu
                 </summary>
@@ -104,6 +114,8 @@
                         <x-mobile-nav-link :href="route('items.create-found')" icon="package">Laporkan Temuan</x-mobile-nav-link>
                         <x-mobile-nav-link :href="route('items.create-lost')" icon="clipboard-list">Laporkan Hilang</x-mobile-nav-link>
                         <x-mobile-nav-link :href="route('dashboard')" icon="layout-dashboard">Riwayat Saya</x-mobile-nav-link>
+                        <x-mobile-nav-link :href="route('notifications.index')" icon="bell">Notifikasi</x-mobile-nav-link>
+                        <x-mobile-nav-link :href="route('telegram.show')" icon="smartphone">Pengaturan Telegram</x-mobile-nav-link>
 
                         @if ($user->canVerifyPickup())
                             <x-mobile-nav-link :href="route('guard.pickup.create')" icon="shield">Verifikasi Kode</x-mobile-nav-link>

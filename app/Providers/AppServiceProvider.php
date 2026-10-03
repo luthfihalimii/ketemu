@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Notifications\Channels\TelegramChannel;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
@@ -26,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        TrustProxies::at(config('ketemupens.trusted_proxies', []));
         $this->configureRateLimiting();
         $this->configureModels();
         $this->configureNotificationChannels();
@@ -60,21 +62,46 @@ class AppServiceProvider extends ServiceProvider
 
         // Keyed by account so a shared campus network does not lock everyone out.
         RateLimiter::for('claims', function (Request $request) {
-            $key = $request->user()?->id ?? $request->ip();
+            $key = $request->user()?->id ?? $request->ip(); // @phpstan-ignore nullsafe.neverNull (user() mengembalikan mixed; bisa null untuk guest)
 
             return Limit::perMinute(10)->by('claim|'.$key);
         });
 
         RateLimiter::for('pickup-verification', function (Request $request) {
-            $key = $request->user()?->id ?? $request->ip();
+            $key = $request->user()?->id ?? $request->ip(); // @phpstan-ignore nullsafe.neverNull (user() mengembalikan mixed; bisa null untuk guest)
 
+            // Keamanan berlapis dengan lockout bertingkat di PickupService:
+            // throttle ini mencegah spam request, lockout di service mencegah
+            // brute-force kode yang menyebar antar menit.
             return Limit::perMinute(15)->by('pickup|'.$key);
         });
 
         RateLimiter::for('reports', function (Request $request) {
-            $key = $request->user()?->id ?? $request->ip();
+            $key = $request->user()?->id ?? $request->ip(); // @phpstan-ignore nullsafe.neverNull (user() mengembalikan mixed; bisa null untuk guest)
 
             return Limit::perMinute(10)->by('report|'.$key);
+        });
+
+        // Webhook Telegram dibatasi per IP dengan limiter bernama supaya
+        // ambangnya terdokumentasi di satu tempat.
+        RateLimiter::for('telegram-webhook', function (Request $request) {
+            return Limit::perMinute(60)->by('telegram|'.$request->ip());
+        });
+
+        // Katalog publik rawan scraping enumerasi: batasi per IP agar crawler
+        // agresif tertahan, pengguna normal tidak terdampak.
+        RateLimiter::for('search', function (Request $request) {
+            return Limit::perMinute(60)->by('search|'.$request->ip());
+        });
+
+        RateLimiter::for('api-search', function (Request $request) {
+            return Limit::perMinute(60)->by('api-search|'.$request->ip());
+        });
+
+        RateLimiter::for('api', function (Request $request) {
+            $key = $request->user()?->id ?? $request->ip(); // @phpstan-ignore nullsafe.neverNull (user() mengembalikan mixed; bisa null untuk guest)
+
+            return Limit::perMinute(60)->by('api|'.$key);
         });
     }
 

@@ -11,6 +11,7 @@
 @php
     $id = $attributes->get('id') ?? 'field-'.str_replace(['[', ']', '.'], ['-', '', '-'], $name);
     $hasError = $errors->has($name);
+    $current = in_array($type, ['password', 'file'], true) || in_array($name, ['answer', 'verification_answer'], true) ? null : old($name, $value);
 @endphp
 
 <div {{ $attributes->only('class')->merge(['class' => '']) }}>
@@ -27,7 +28,7 @@
         type="{{ $type }}"
         name="{{ $name }}"
         id="{{ $id }}"
-        @if ($value !== null) value="{{ $value }}" @endif
+        @if ($current !== null) value="{{ $current }}" @endif
         @if ($placeholder) placeholder="{{ $placeholder }}" @endif
         @if ($required) required @endif
         @if ($hasError) aria-invalid="true" aria-describedby="{{ $id }}-error" @endif

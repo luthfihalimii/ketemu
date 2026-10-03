@@ -50,6 +50,13 @@
                 hint="Jangan tuliskan ciri rahasia di sini — cukup informasi umum."
             />
 
+            <x-textarea
+                name="private_note"
+                label="Catatan internal (tidak tampil ke publik)"
+                placeholder="Contoh: ada goresan di sisi kiri untuk dikenali satpam."
+                hint="Hanya terlihat oleh kamu, satpam, dan admin."
+            />
+
             <div class="grid gap-5 sm:grid-cols-2">
                 <x-input name="color" label="Warna" placeholder="Contoh: Hitam" />
                 <x-input name="brand" label="Merek" placeholder="Contoh: Eiger" />
@@ -79,26 +86,7 @@
                 :value="old('occurred_at', now()->format('Y-m-d\TH:i'))"
             />
 
-            <div class="border-t border-slate-200 pt-6">
-                <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
-                    <x-icon name="camera" class="h-5 w-5 text-brand-600" />
-                    Foto barang (opsional)
-                </h2>
-                <p class="help mb-3">
-                    Format JPG, PNG, atau WEBP. Maksimal 5 MB. Metadata foto seperti lokasi akan dihapus otomatis.
-                </p>
-                <input
-                    type="file"
-                    name="photo"
-                    accept="image/jpeg,image/png,image/webp"
-                    class="field file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
-                >
-                @error('photo')
-                    <p class="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-rose-600">
-                        <x-icon name="alert-triangle" class="h-4 w-4" /> {{ $message }}
-                    </p>
-                @enderror
-            </div>
+            <x-photo-upload />
 
             <div class="border-t border-slate-200 pt-6">
                 <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
@@ -129,7 +117,7 @@
                         </p>
                         <p class="mt-1 text-sm text-amber-800">
                             Tulis satu ciri yang <strong>tidak terlihat jelas di foto</strong>. Jawaban ini
-                            disimpan terenkripsi dan <strong>tidak pernah ditampilkan</strong> kepada publik —
+                            disimpan sebagai hash dan <strong>tidak pernah ditampilkan</strong> kepada publik —
                             hanya dipakai untuk memverifikasi pemilik.
                         </p>
 

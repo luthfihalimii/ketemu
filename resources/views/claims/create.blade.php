@@ -13,17 +13,7 @@
         <div class="card mb-6 p-5">
             <div class="flex items-start gap-4">
                 <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                    @if ($item->photo_path)
-                        <img
-                            src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($item->photo_path) }}"
-                            alt="Foto {{ $item->title }}"
-                            class="h-full w-full object-cover"
-                        >
-                    @else
-                        <div class="flex h-full w-full items-center justify-center text-slate-300">
-                            <x-icon name="package" class="h-7 w-7" />
-                        </div>
-                    @endif
+                    <x-item-photo :item="$item" />
                 </div>
 
                 <div class="min-w-0">

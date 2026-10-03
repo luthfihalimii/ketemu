@@ -104,14 +104,10 @@ class TelegramService
     /**
      * Deliver a plain-text message.
      *
-     * Never throws. Notification channels are resolved and invoked inside the
-     * business transaction that triggered them (a claim approval, a handover),
-     * and NotificationSender rethrows channel failures, so an exception here
-     * would roll back a successful action. A failed message is only logged.
-     *
-     * ponytail: the HTTP call runs inside that transaction, so a slow Telegram
-     * API briefly holds the row lock. Fine at campus scale; move to a queue
-     * worker if handover throughput ever matters.
+     * Never throws. Notifications are queued (ShouldQueue + afterCommit), so
+     * this HTTP call runs on the worker after the business transaction has
+     * committed; a slow or failing Telegram API can no longer delay or roll
+     * back a successful claim or handover. A failed message is only logged.
      */
     public function sendMessage(string $chatId, string $text): bool
     {

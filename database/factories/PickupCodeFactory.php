@@ -21,7 +21,7 @@ class PickupCodeFactory extends Factory
     {
         return [
             'claim_id' => Claim::factory(),
-            'item_id' => fn (array $attributes) => Claim::query()->find($attributes['claim_id'])?->item_id
+            'item_id' => fn (array $attributes) => Claim::query()->find($attributes['claim_id'])->item_id
                 ?? Item::factory()->create()->id,
             'user_id' => User::factory(),
             'code_hash' => hash('sha256', 'TESTCODE'),

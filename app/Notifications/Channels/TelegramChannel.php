@@ -13,10 +13,10 @@ use Throwable;
  * Registered under the name "telegram" in AppServiceProvider, which keeps
  * routeNotificationForTelegram() working on the notifiable model.
  *
- * This channel never throws. NotificationSender rethrows channel failures, and
- * notifications are sent from inside the transaction that performed the
- * business action, so an exception here would roll back a successful claim or
- * handover. A failed message must stay a failed message.
+ * This channel never throws. Notifications are queued with afterCommit, so a
+ * failure here can no longer roll back the business action that triggered
+ * it — but a thrown exception would still mark the queued job as failed for
+ * a pointless retry. A failed message must stay a failed message.
  */
 class TelegramChannel
 {

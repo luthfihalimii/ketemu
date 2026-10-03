@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Role;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,13 +12,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected function casts(): array
     {
@@ -27,6 +29,7 @@ class User extends Authenticatable
             'role' => Role::class,
             'telegram_link_token_expires_at' => 'datetime',
             'telegram_linked_at' => 'datetime',
+            'banned_at' => 'datetime',
         ];
     }
 
@@ -55,10 +58,11 @@ class User extends Authenticatable
     /**
      * Admins who should be told about a moderation event.
      *
-     * @return Collection<int, self>
+     * @return Collection<int, static>
      */
     public static function admins(): Collection
     {
+        /** @var Collection<int, static> */
         return static::query()->where('role', Role::Admin)->get();
     }
 
@@ -77,6 +81,11 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === Role::Admin;
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->banned_at !== null;
     }
 
     public function isGuard(): bool

@@ -18,6 +18,7 @@ class ModerationService
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly PickupCodeService $pickupCodes,
+        private readonly ItemPhotoService $photos,
     ) {}
 
     /**
@@ -25,12 +26,12 @@ class ModerationService
      */
     public function flag(Item $item, string $reason, User $admin): Item
     {
-        $item->update([
+        $item->forceFill([
             'flagged_at' => now(),
             'flag_reason' => $reason,
             'moderated_by' => $admin->id,
             'moderated_at' => now(),
-        ]);
+        ])->save();
 
         $this->audit->log(
             event: 'moderation.item_flagged',
@@ -56,12 +57,12 @@ class ModerationService
 
     public function unflag(Item $item, User $admin): Item
     {
-        $item->update([
+        $item->forceFill([
             'flagged_at' => null,
             'flag_reason' => null,
             'moderated_by' => $admin->id,
             'moderated_at' => now(),
-        ]);
+        ])->save();
 
         $this->audit->log(
             event: 'moderation.item_unflagged',
@@ -96,6 +97,15 @@ class ModerationService
             $item->save();
 
             $this->cancelActiveClaims($item, $reason);
+
+            if ($item->photo_path !== null) {
+                $path = $item->photo_path;
+                $this->photos->archive($path);
+                $item->archived_photo_path = $path;
+                $item->photo_path = null;
+                $item->save();
+                DB::afterCommit(fn () => $this->photos->delete($path));
+            }
 
             $this->audit->log(
                 event: 'moderation.item_rejected',
@@ -146,6 +156,11 @@ class ModerationService
             $item->moderation_note = null;
             $item->moderated_by = $admin->id;
             $item->moderated_at = now();
+            if ($item->archived_photo_path !== null) {
+                $this->photos->restore($item->archived_photo_path);
+                $item->photo_path = $item->archived_photo_path;
+                $item->archived_photo_path = null;
+            }
             $item->save();
 
             $this->audit->log(
@@ -214,7 +229,7 @@ class ModerationService
             $claim->user?->notify(new ActivityNotification(
                 event: ActivityNotification::REJECTED,
                 title: 'Klaim ditolak',
-                body: 'Klaimmu untuk "'.($item?->title ?? 'barang').'" ditolak admin. Alasan: '.$reason,
+                body: 'Klaimmu untuk "'.($item->title ?? 'barang').'" ditolak admin. Alasan: '.$reason,
                 item: $item,
                 url: $item !== null ? route('items.show', $item) : route('dashboard.claims'),
                 level: 'error',
@@ -250,6 +265,16 @@ class ModerationService
                 user: $admin,
             );
 
+            // Notifications link to the owner's protected page, never the code.
+            $claim->user?->notify(new ActivityNotification(
+                event: ActivityNotification::CODE_REISSUED,
+                title: 'Kode pengambilan baru untuk klaimmu',
+                body: 'Admin menerbitkan kode pengambilan baru untuk "'.$claim->item?->title.'" (berlaku '.PickupCodeService::validityMinutes().' menit). Buka halaman kode untuk detail.',
+                item: $claim->item,
+                url: route('claims.pickup', $claim),
+                level: 'success',
+            ));
+
             return ['claim' => $claim->refresh(), 'plain' => $issued['plain']];
         });
     }
@@ -274,6 +299,13 @@ class ModerationService
             $item->moderated_by = $admin->id;
             $item->moderated_at = now();
             $item->save();
+
+            // Barang keluar dari katalog: foto tidak lagi dibutuhkan.
+            if ($item->photo_path !== null) {
+                $this->photos->delete($item->photo_path);
+                $item->photo_path = null;
+                $item->save();
+            }
 
             $this->audit->log(
                 event: 'moderation.item_expired',

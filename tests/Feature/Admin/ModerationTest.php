@@ -10,7 +10,9 @@ use App\Models\Category;
 use App\Models\Claim;
 use App\Models\Item;
 use App\Models\User;
+use App\Notifications\ActivityNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Concerns\BuildsItemFlow;
 use Tests\TestCase;
@@ -233,10 +235,13 @@ class ModerationTest extends TestCase
         $old = $claim->pickupCode;
         $old->update(['expires_at' => now()->subMinute()]);
 
+        // Notifikasi hanya menautkan halaman kode milik pemilik klaim.
+        Notification::fake();
+
         $this->actingAs($admin)
             ->post(route('admin.claims.reissue', $claim))
             ->assertRedirect()
-            ->assertSessionHas('reissued_code');
+            ->assertSessionMissing('reissued_code');
 
         $new = $claim->refresh()->pickupCode;
 
@@ -244,6 +249,22 @@ class ModerationTest extends TestCase
         $this->assertSame(PickupCodeStatus::Active, $new->status);
         $this->assertTrue($new->isUsable());
         $this->assertDatabaseHas('audit_logs', ['event' => 'moderation.code_reissued']);
+
+        Notification::assertSentTo(
+            $claimant,
+            ActivityNotification::class,
+            function ($notification) use ($claimant, $claim, $new): bool {
+                $plain = $new->plainCode();
+                $this->assertNotNull($plain);
+                $this->assertStringNotContainsString($plain, serialize($notification));
+                $this->assertStringNotContainsString($plain, json_encode($notification->toArray($claimant), JSON_THROW_ON_ERROR));
+                $this->assertStringNotContainsString($plain, $notification->toTelegram($claimant));
+                $this->assertStringNotContainsString($plain, implode(' ', $notification->toMail($claimant)->introLines));
+
+                return $notification->event === ActivityNotification::CODE_REISSUED
+                    && $notification->url === route('claims.pickup', $claim);
+            },
+        );
     }
 
     #[Test]
@@ -281,7 +302,7 @@ class ModerationTest extends TestCase
         $admin = User::factory()->admin()->create();
         $this->storedItem(['title' => 'Laporan Biasa']);
         $flagged = $this->storedItem(['title' => 'Laporan Ditandai']);
-        $flagged->update(['flagged_at' => now(), 'flag_reason' => 'perlu dicek']);
+        $flagged->forceFill(['flagged_at' => now(), 'flag_reason' => 'perlu dicek'])->save();
 
         $response = $this->actingAs($admin)->get(route('admin.items.index', ['only' => 'flagged']));
 

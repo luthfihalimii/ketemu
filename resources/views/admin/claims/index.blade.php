@@ -10,20 +10,14 @@
             icon="hand-raised"
         >
             <x-button :href="route('admin.items.index')" variant="secondary" size="sm" icon="shield">Laporan</x-button>
-            <x-button :href="route('admin.audit.index')" variant="secondary" size="sm" icon="list">Audit Log</x-button>
+            <x-button :href="route('admin.audit.index')" variant="secondary" size="sm" icon="list">Log Aktivitas</x-button>
         </x-page-header>
-
-        @if (session('reissued_code'))
-            <x-alert type="success" title="Kode pengambilan baru" class="mb-6">
-                <p class="font-mono text-lg font-bold tracking-[0.3em]">{{ session('reissued_code') }}</p>
-            </x-alert>
-        @endif
 
         <form method="GET" action="{{ route('admin.claims.index') }}" class="card mb-6 grid gap-4 p-5 sm:grid-cols-3">
             <x-select name="status" label="Status klaim" placeholder="Semua status" :selected="$filters['status'] ?? null" :options="$statusOptions->all()" />
             <div class="flex items-end gap-3">
                 <x-button type="submit" icon="search">Terapkan</x-button>
-                <x-button :href="route('admin.claims.index')" variant="secondary">Reset</x-button>
+                <x-button :href="route('admin.claims.index')" variant="secondary">Hapus filter</x-button>
             </div>
         </form>
 
@@ -35,11 +29,11 @@
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
                         <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
                             <tr>
-                                <th class="px-4 py-3">Pengklaim</th>
-                                <th class="px-4 py-3">Barang</th>
-                                <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3">Kode</th>
-                                <th class="px-4 py-3"></th>
+                                <th scope="col" class="px-4 py-3">Pengklaim</th>
+                                <th scope="col" class="px-4 py-3">Barang</th>
+                                <th scope="col" class="px-4 py-3">Status</th>
+                                <th scope="col" class="px-4 py-3">Kode</th>
+                                <th scope="col" class="px-4 py-3"><span class="sr-only">Tindakan</span></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -47,18 +41,18 @@
                                 <tr>
                                     <td class="px-4 py-3">
                                         <p class="font-medium text-slate-800">{{ $claim->user?->name }}</p>
-                                        <p class="text-xs text-slate-400">{{ $claim->user?->email }}</p>
+                                        <p class="text-xs text-slate-600">{{ $claim->user?->email }}</p>
                                     </td>
                                     <td class="px-4 py-3">
                                         <p class="text-slate-700">{{ $claim->item?->title }}</p>
-                                        <p class="font-mono text-xs text-slate-400">{{ $claim->item?->code }}</p>
+                                        <p class="font-mono text-xs text-slate-600">{{ $claim->item?->code }}</p>
                                     </td>
                                     <td class="px-4 py-3"><x-claim-status-badge :status="$claim->status" /></td>
                                     <td class="px-4 py-3">
                                         @if ($claim->pickupCode)
                                             <x-pickup-code-status-badge :status="$claim->pickupCode->effectiveStatus()" />
                                         @else
-                                            <span class="text-xs text-slate-400">&mdash;</span>
+                                            <span class="text-xs text-slate-600">&mdash;</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3">
@@ -66,13 +60,13 @@
                                             @if ($claim->status->isActive())
                                                 <form method="POST" action="{{ route('admin.claims.reject', $claim) }}" class="flex items-center gap-2" data-confirm="Tolak klaim ini?">
                                                     @csrf
-                                                    <input type="text" name="reason" placeholder="Alasan" required class="field w-36 px-3 py-1.5 text-sm">
+                                                    <input type="text" name="reason" aria-label="Alasan penolakan klaim {{ $claim->id }}" value="{{ old('reason') }}" placeholder="Alasan" required class="field w-36 px-3 py-1.5 text-sm">
                                                     <x-button type="submit" variant="danger" size="sm">Tolak</x-button>
                                                 </form>
                                             @endif
 
                                             @if ($claim->status === \App\Enums\ClaimStatus::Approved)
-                                                <form method="POST" action="{{ route('admin.claims.reissue', $claim) }}">
+                                                <form method="POST" action="{{ route('admin.claims.reissue', $claim) }}" data-confirm="Terbitkan kode baru? Kode pengambilan lama akan dibatalkan.">
                                                     @csrf
                                                     <x-button type="submit" variant="secondary" size="sm" icon="ticket">Kode baru</x-button>
                                                 </form>

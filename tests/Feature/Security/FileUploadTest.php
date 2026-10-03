@@ -3,6 +3,7 @@
 namespace Tests\Feature\Security;
 
 use App\Models\Item;
+use App\Services\ItemPhotoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +19,7 @@ class FileUploadTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake('public');
+        Storage::fake(ItemPhotoService::disk());
     }
 
     #[Test]
@@ -41,7 +42,8 @@ class FileUploadTest extends TestCase
 
         $this->assertNotNull($item->photo_path);
         $this->assertStringStartsWith('items/', $item->photo_path);
-        Storage::disk('public')->assertExists($item->photo_path);
+        Storage::disk(ItemPhotoService::disk())->assertExists($item->photo_path);
+        $this->assertSame('image/webp', (new \finfo(FILEINFO_MIME_TYPE))->buffer(Storage::disk(ItemPhotoService::disk())->get($item->photo_path)));
     }
 
     #[Test]
@@ -118,7 +120,7 @@ class FileUploadTest extends TestCase
         $this->assertStringNotContainsString('evil', $item->photo_path);
         $this->assertStringNotContainsString('..', $item->photo_path);
         $this->assertStringNotContainsString('rm -rf', $item->photo_path);
-        $this->assertSame(1, preg_match('/^items\/\d+-[a-z0-9]+\.webp$/', $item->photo_path), 'Filename should be a server-generated webp.');
+        $this->assertSame(1, preg_match('/^items\/[a-z0-9]+-\d+\.webp$/', $item->photo_path), 'Filename should be a server-generated webp.');
     }
 
     #[Test]
@@ -141,7 +143,7 @@ class FileUploadTest extends TestCase
 
         // Re-encoding is what drops EXIF/GPS from the original upload.
         $this->assertStringEndsWith('.webp', $item->photo_path);
-        Storage::disk('public')->assertExists($item->photo_path);
+        Storage::disk(ItemPhotoService::disk())->assertExists($item->photo_path);
     }
 
     #[Test]
